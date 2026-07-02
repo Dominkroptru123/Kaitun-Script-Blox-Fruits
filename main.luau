@@ -732,10 +732,8 @@ local function GetNearestMob(originMob, maxDistance)
     if not originMob or not originMob:FindFirstChild("HumanoidRootPart") then
         return nil
     end
-
     local nearest
     local nearestDistance = math.huge
-
     for _, mob in ipairs(workspace.Enemies:GetChildren()) do
         if mob ~= originMob
         and mob.Name == Monster
@@ -743,9 +741,7 @@ local function GetNearestMob(originMob, maxDistance)
         and mob:FindFirstChild("Humanoid")
         and mob:FindFirstChild("HumanoidRootPart")
         and mob.Humanoid.Health > 0 then
-
             local dist = (mob.HumanoidRootPart.Position - originMob.HumanoidRootPart.Position).Magnitude
-
             if dist <= maxDistance and dist < nearestDistance then
                 nearest = mob
                 nearestDistance = dist
@@ -756,7 +752,8 @@ local function GetNearestMob(originMob, maxDistance)
     return nearest
 end
 
-local function SmartMoveAndAttack(mainMob, QuestTitle, Quest)
+local function SmartMoveAndAttack(mainMob, QuestTitle, Quest, CustomCF)
+    IsCheckQuest = IsCheckQuest or false
     pcall(sethiddenproperty, LocalPlayer, "SimulationRadius", math.huge)
     if not mainMob or not mainMob.Parent or not mainMob:FindFirstChild("Humanoid") or not mainMob:FindFirstChild("HumanoidRootPart") then
         return false
@@ -822,9 +819,14 @@ local function SmartMoveAndAttack(mainMob, QuestTitle, Quest)
                 Attack(mainMob)
             end
         end
-
-    until not workspace.Enemies:FindFirstChild(Monster) or not string.find(QuestTitle.Text, NameCheckQuest) or not mainMob or not mainMob:FindFirstChild("Humanoid") or mainMob.Humanoid.Health <= 0 or not Quest.Visible
+    until (IsCheckQuest and not workspace.Enemies:FindFirstChild(Monster))
+        or (IsCheckQuest and not string.find(QuestTitle.Text, NameCheckQuest)) 
+        or not mainMob 
+        or not mainMob:FindFirstChild("Humanoid") 
+        or mainMob.Humanoid.Health <= 0 
+        or (IsCheckQuest and not Quest.Visible)
         or (secondMob and (not secondMob.Parent or not secondMob:FindFirstChild("Humanoid") or secondMob.Humanoid.Health <= 0) and humanoid.Health <= 0)
+        
     return humanoid.Health <= 0
 end
 local function KaitunWorld1(Quest,QuestTitle,Level)
@@ -836,7 +838,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 				if workspace.Enemies:FindFirstChild("Ice Admiral") then
 					for _, v in workspace.Enemies:GetChildren() do
 						if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == "Ice Admiral" then
-                            SmartMoveAndAttack(v, QuestTitle.Text)
+                            SmartMoveAndAttack(v, QuestTitle.Text, Quest, true)
 						end
 					end
 				else
@@ -861,7 +863,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 						if workspace.Enemies:FindFirstChild("Mob Leader") then
 							for _, v in workspace.Enemies:GetChildren() do
 								if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == "Mob Leader" then
-                                    SmartMoveAndAttack(v, QuestTitle, Quest)
+                                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
 								end
 							end
 						else
@@ -915,7 +917,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 		if workspace.Enemies:FindFirstChild("Saber Expert") then
 			for _, v in workspace.Enemies:GetChildren() do
 				if v.Name == "Saber Expert" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    SmartMoveAndAttack(v, QuestTitle, Quest)
+                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
 				end
 			end
 		elseif ReplicatedStorage:FindFirstChild("Saber Expert") then
@@ -934,7 +936,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 		if workspace.Enemies:FindFirstChild("Thunder God") then
 			for _, v in workspace.Enemies:GetChildren() do
 				if v.Name == "Thunder God" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    SmartMoveAndAttack(v, QuestTitle, Quest)
+                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
 				end
 			end
 		elseif ReplicatedStorage:FindFirstChild("Thunder God") then
@@ -955,15 +957,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 					break
 				end
 				if v.Name == "Dark Master" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    SmartMoveAndAttack(v, QuestTitle, Quest)
-				else
-					local t0 = Tween(CFrame.new(-5250, 389, -2272),350)
-					if (CFrame.new(-5250, 389, -2272).Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-						if t0 then
-							t0:Cancel()
-						end
-						LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-5250, 389, -2272)
-					end 
+                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
 				end
 			end
 		else
@@ -983,15 +977,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 					break
 				end
 				if v.Name == "Royal Squad" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    SmartMoveAndAttack(v, QuestTitle, Quest)
-				else
-					local t0 = Tween(CFrame.new(-7670, 5607, -1460),350)
-					if (CFrame.new(-7670, 5607, -1460).Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-						if t0 then
-							t0:Cancel()
-						end
-						LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-7670, 5607, -1460)
-					end
+                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
 				end
 			end
 		else
@@ -1046,7 +1032,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
 		if workspace.Enemies:FindFirstChild("Core") then
 			for _,v in pairs(workspace.Enemies:GetChildren()) do
 				if v.Name == "Core" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
-                    SmartMoveAndAttack(v, QuestTitle, Quest)
+                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
 				end
 			end
 		elseif ReplicatedStorage:FindFirstChild("Core") then
@@ -1059,7 +1045,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
                     if workspace.Enemies:FindFirstChild("Swan Pirate") then
                         for _, v in pairs(workspace.Enemies:GetChildren()) do
                             if v.Name == "Swan Pirate" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                                SmartMoveAndAttack(v, QuestTitle, Quest)
+                                SmartMoveAndAttack(v, QuestTitle, Quest, true)
                             end
                         end
                     else
@@ -1083,7 +1069,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
             if workspace.Enemies:FindFirstChild("Jeremy") then
                 for _,v in pairs(workspace.Enemies:GetChildren()) do
                     if v.Name == "Jeremy" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                        SmartMoveAndAttack(v, QuestTitle, Quest)
+                        SmartMoveAndAttack(v, QuestTitle, Quest, true)
                     end
                 end
             elseif ReplicatedStorage:FindFirstChild("Jeremy") then
