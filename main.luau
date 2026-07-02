@@ -109,6 +109,20 @@ task.spawn(function()
 end)
 local seed = ReplicatedStorage.Modules.Net.seed:InvokeServer() * 2
 local LastAttackTime = 0
+local function IsOwn(name)
+	if LocalPlayer.Backpack:FindFirstChild(name) then
+		return LocalPlayer.Backpack:FindFirstChild(name)
+	end
+	local k
+	for _,v in LocalPlayer.Character:GetChildren() do 
+		if v:IsA("Tool") then
+			if v.Name == name then
+				k = v
+			end
+		end
+	end
+	return k or LocalPlayer.Character:FindFirstChild(name)
+end
 local function Attack(v)
 	if tick() - LastAttackTime >= 0.2 then
 		if not LocalPlayer.Character:FindFirstChild("HasBuso") then
@@ -180,20 +194,6 @@ local function DieWait()
             CommF_:InvokeServer("Buso") 
         end
     end
-end
-local function IsOwn(name)
-	if LocalPlayer.Backpack:FindFirstChild(name) then
-		return LocalPlayer.Backpack:FindFirstChild(name)
-	end
-	local k
-	for _,v in LocalPlayer.Character:GetChildren() do 
-		if v:IsA("Tool") then
-			if v.Name == name then
-				k = v
-			end
-		end
-	end
-	return k or LocalPlayer.Character:FindFirstChild(name)
 end
 local function EquipWeapon(type)
     local SixSeven = ""
