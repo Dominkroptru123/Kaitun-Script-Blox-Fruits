@@ -142,8 +142,28 @@ local function Attack(v)
 	end
     if type(v) == "table" then
         ReplicatedStorage.Modules.Net["RE/RegisterAttack"]:FireServer(0)
-        r:FireServer(encoded,bit32.bxor(r:GetAttribute("Id")+909090,seed),v[#v][2],v,v106)
-        ReplicatedStorage.Modules.Net["RE/RegisterHit"]:FireServer(v[#v][2],v,v106)
+        r:FireServer(encoded,bit32.bxor(r:GetAttribute("Id")+909090,seed),
+            v[1]:FindFirstChild("Head"),
+            {
+                { v[1], v[1]:FindFirstChild("Head") }, 
+                v[1],
+                { v[2], v[2]:FindFirstChild("Head") }, 
+                v[2]
+            },
+            nil,
+            v106
+        )
+        ReplicatedStorage.Modules.Net["RE/RegisterHit"]:FireServer(
+            v[1]:FindFirstChild("Head"),
+            {
+                { v[1], v[1]:FindFirstChild("Head") }, 
+                v[1],
+                { v[2], v[2]:FindFirstChild("Head") }, 
+                v[2]
+            },
+            nil,
+            v106
+        )
     else
         ReplicatedStorage.Modules.Net["RE/RegisterAttack"]:FireServer(0)
         r:FireServer(encoded,bit32.bxor(r:GetAttribute("Id")+909090,seed),v:FindFirstChild("Head"),{v,v:FindFirstChild("Head")},v106)
@@ -228,7 +248,7 @@ local function BringMob(a)
     local targets = {}
     table.insert(targets, {a, a:FindFirstChild("Head")})
     for _, v in ipairs(workspace.Enemies:GetChildren()) do
-        if string.find(v.Name:lower(), aname:lower(), 1, true) and not v:FindFirstChild("BringCheck") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and isnetworkowner(v.PrimaryPart) and (acf.Position - v.HumanoidRootPart.Position).Magnitude <= 350 then
+        if string.find(v.Name:lower(), aname:lower(), 1, true) and not v:FindFirstChild("BringCheck") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and (acf.Position - v.HumanoidRootPart.Position).Magnitude <= 350 then
             local bv = v.HumanoidRootPart:FindFirstChild("BringVelocity")
             if not bv then
                 bv = Instance.new("BodyVelocity")
@@ -237,21 +257,7 @@ local function BringMob(a)
                 bv.Parent = v.HumanoidRootPart
             end
             bv.Velocity = Vector3.zero
-            local bp = v.HumanoidRootPart:FindFirstChild("BringPosition")
-            if not bp then
-                bp = Instance.new("BodyPosition")
-                bp.Name = "BringPosition"
-                bp.MaxForce = Vector3.new(10000, 10000, 10000)
-                bp.P = 4.12
-                bp.D = 1000
-                bp.Parent = v.HumanoidRootPart
-            end
-            bp.Position = acf.Position + Vector3.new(1, 0, 1)
-            local chk = Instance.new("BoolValue")
-            chk.Name = "BringCheck"
-            chk.Value = true
-            chk.Parent = v
-            v.HumanoidRootPart.CFrame = acf * CFrame.new(1, 0, 1)
+            v.HumanoidRootPart.CFrame = acf
             table.insert(targets, {v, v:FindFirstChild("Head")})
             break
         end
@@ -263,8 +269,8 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game.CoreGui
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 500, 0, 75)  -- wider + shorter
-frame.Position = UDim2.new(0.5, -250, 0, 30) -- centered horizontally, near top
+frame.Size = UDim2.new(0, 500, 0, 75)
+frame.Position = UDim2.new(0.5, -250, 0, 30)
 frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 frame.BackgroundTransparency = 0.2
 frame.Parent = ScreenGui
@@ -333,7 +339,7 @@ local NameQuest
 local NameCheckQuest
 local CFrameQ
 local CFrameMon
-require(ReplicatedStorage.Util.CameraShaker):Stop()
+if not identifyexecutor() == "Solara" then require(ReplicatedStorage.Util.CameraShaker):Stop() end
 local World1 = false
 local World2 = false
 local World3 = false
@@ -722,6 +728,108 @@ task.spawn(function()
 		ReplicatedStorage.Remotes.Redeem:InvokeServer(v)
 	end
 end)
+local function GetNearestMob(originMob, maxDistance)
+    if not originMob or not originMob:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+
+    local nearest
+    local nearestDistance = math.huge
+
+    for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+        if mob ~= originMob
+        and mob.Name == Monster
+        and mob.Parent
+        and mob:FindFirstChild("Humanoid")
+        and mob:FindFirstChild("HumanoidRootPart")
+        and mob.Humanoid.Health > 0 then
+
+            local dist = (mob.HumanoidRootPart.Position - originMob.HumanoidRootPart.Position).Magnitude
+
+            if dist <= maxDistance and dist < nearestDistance then
+                nearest = mob
+                nearestDistance = dist
+            end
+        end
+    end
+
+    return nearest
+end
+
+local function SmartMoveAndAttack(mainMob, QuestTitle, Quest)
+    pcall(sethiddenproperty, LocalPlayer, "SimulationRadius", math.huge)
+    if not mainMob or not mainMob.Parent or not mainMob:FindFirstChild("Humanoid") or not mainMob:FindFirstChild("HumanoidRootPart") then
+        return false
+    end
+    local humanoid = mainMob.Humanoid
+    local hrp = mainMob.HumanoidRootPart
+    mainMob.Humanoid.JumpPower = 0
+    mainMob.Humanoid.WalkSpeed = 0
+    hrp.CanCollide = false
+    local bv = mainMob.HumanoidRootPart:FindFirstChild("BringVelocity")
+    if not bv then
+        bv = Instance.new("BodyVelocity")
+        bv.Name = "BringVelocity"
+        bv.MaxForce = Vector3.new(100000, 100000, 100000)
+        bv.Parent = mainMob.HumanoidRootPart
+    end
+    bv.Velocity = Vector3.zero
+    local secondMob = nil
+    local tween
+    repeat task.wait()
+        if not secondMob then
+            secondMob = GetNearestMob(mainMob, 350)
+        end
+        if secondMob and secondMob.Parent and secondMob:FindFirstChild("Humanoid") and secondMob.Humanoid.Health > 0 and secondMob:FindFirstChild("HumanoidRootPart") then
+            secondMob.HumanoidRootPart.CFrame = hrp.CFrame
+            secondMob.Humanoid.JumpPower = 0
+            secondMob.Humanoid.WalkSpeed = 0
+            secondMob.HumanoidRootPart.CanCollide = false
+            local bv = secondMob.HumanoidRootPart:FindFirstChild("BringVelocity")
+            if not bv then
+                bv = Instance.new("BodyVelocity")
+                bv.Name = "BringVelocity"
+                bv.MaxForce = Vector3.new(100000, 100000, 100000)
+                bv.Parent = secondMob.HumanoidRootPart
+            end
+            bv.Velocity = Vector3.zero
+        else
+            secondMob = nil
+        end
+        local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not myHRP then
+            break
+        end
+        local distance = (myHRP.Position - hrp.Position).Magnitude
+        if distance > 150 then
+            if not tween or tween.PlaybackState ~= Enum.PlaybackState.Playing then
+                tween = Tween(hrp.CFrame * CFrame.new(0,30,0),350)
+            end
+        else
+            if tween then
+                tween:Cancel()
+                tween = nil
+            end
+            EquipWeapon("Melee")
+            if tick() - LastRotate >= 0.3 then
+                AttackRotation = (AttackRotation + 180) % 360
+                LastRotate = tick()
+            end
+            myHRP.CFrame = hrp.CFrame * CFrame.new(0,30,0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
+            if secondMob then
+                Attack({mainMob, secondMob})
+            else
+                Attack(mainMob)
+            end
+        end
+
+    until not workspace.Enemies:FindFirstChild(Monster) or not string.find(QuestTitle.Text, NameCheckQuest) or not mainMob or not mainMob:FindFirstChild("Humanoid") or mainMob.Humanoid.Health <= 0 or not Quest.Visible
+        or (secondMob and (not secondMob.Parent or not secondMob:FindFirstChild("Humanoid") or secondMob.Humanoid.Health <= 0) and humanoid.Health <= 0)
+    if tween then
+        tween:Cancel()
+    end
+    return humanoid.Health <= 0
+end
 local function KaitunWorld1(Quest,QuestTitle,Level)
 	CheckInv()
 	if Level >= 700 then
@@ -731,28 +839,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 				if workspace.Enemies:FindFirstChild("Ice Admiral") then
 					for _, v in workspace.Enemies:GetChildren() do
 						if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == "Ice Admiral" then
-							local t2
-							repeat task.wait()
-								if (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-									if not t2 then
-										t2 = Tween(v.HumanoidRootPart.CFrame,350)
-									end
-								elseif (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-									if t2 then
-										t2:Cancel()
-									end
-									EquipWeapon("Melee")
-									if tick() - LastRotate >= 0.1 then
-										AttackRotation = (AttackRotation + 180) % 360
-										LastRotate = tick()
-									end
-									LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-									v.Humanoid.JumpPower = 0
-									v.Humanoid.WalkSpeed = 0
-									v.HumanoidRootPart.CanCollide = false
-									Attack(v)
-								end
-							until not v or not v.Parent or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0
+                            SmartMoveAndAttack(v, QuestTitle.Text)
 						end
 					end
 				else
@@ -777,28 +864,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 						if workspace.Enemies:FindFirstChild("Mob Leader") then
 							for _, v in workspace.Enemies:GetChildren() do
 								if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == "Mob Leader" then
-									local t1
-									repeat task.wait() 
-										if (v.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-											if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-												t1 = Tween(v.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0),350)
-											end
-										elseif (v.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-											if t1 then
-												t1:Cancel()
-											end
-											EquipWeapon("Melee")
-											if tick() - LastRotate >= 0.1 then
-												AttackRotation = (AttackRotation + 180) % 360
-												LastRotate = tick()
-											end
-											LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0,15,0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-											v.Humanoid.JumpPower = 0
-											v.Humanoid.WalkSpeed = 0
-											v.HumanoidRootPart.CanCollide = false
-											Attack(v)
-										end
-									until not v or not v.Parent or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0
+                                    SmartMoveAndAttack(v, QuestTitle, Quest)
 								end
 							end
 						else
@@ -834,6 +900,9 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 			for _, v in workspace.Map.Jungle.QuestPlates:GetChildren() do
 				if v:IsA("Model") then
 					if v.Button.BrickColor ~= BrickColor.new("Camo") then
+                        title.Text = "Doing Saber Quest | Touching Plates " .. v.num .. "/5"
+                        local tbar = Tween(v.plate.CFrame,350)
+                        tbar.Completed:Wait()
 						firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,0)
 						task.wait(0.1)
 						firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,1) 
@@ -847,28 +916,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 		if workspace.Enemies:FindFirstChild("Saber Expert") then
 			for _, v in workspace.Enemies:GetChildren() do
 				if v.Name == "Saber Expert" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-					local t1
-					repeat task.wait()
-						if (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-							if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-								t1 = Tween(v.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0),350)
-							end
-						elseif (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-							if t1 then
-								t1:Cancel()
-							end
-							EquipWeapon("Melee")
-							if tick() - LastRotate >= 0.1 then
-								AttackRotation = (AttackRotation + 180) % 360
-								LastRotate = tick()
-							end
-							LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-							v.Humanoid.JumpPower = 0
-							v.Humanoid.WalkSpeed = 0
-							v.HumanoidRootPart.CanCollide = false
-							Attack(v)
-						end
-					until not v or not v.Parent or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0
+                    SmartMoveAndAttack(v, QuestTitle, Quest)
 				end
 			end
 		elseif ReplicatedStorage:FindFirstChild("Saber Expert") then
@@ -887,28 +935,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 		if workspace.Enemies:FindFirstChild("Thunder God") then
 			for _, v in workspace.Enemies:GetChildren() do
 				if v.Name == "Thunder God" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-					local t1
-					repeat task.wait()
-						if (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-							if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-								t1 = Tween(v.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0),350)
-							end
-						elseif (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-							if t1 then
-								t1:Cancel()
-							end
-							EquipWeapon("Melee")
-							if tick() - LastRotate >= 0.1 then
-								AttackRotation = (AttackRotation + 180) % 360
-								LastRotate = tick()
-							end
-							LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-							v.Humanoid.JumpPower = 0
-							v.Humanoid.WalkSpeed = 0
-							v.HumanoidRootPart.CanCollide = false
-							Attack(v)
-						end
-					until not v or not v.Parent or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0
+                    SmartMoveAndAttack(v, QuestTitle, Quest)
 				end
 			end
 		elseif ReplicatedStorage:FindFirstChild("Thunder God") then
@@ -929,32 +956,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 					break
 				end
 				if v.Name == "Dark Master" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-					local t1
-					repeat task.wait()
-						if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-							if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-								t1 = Tween(v.HumanoidRootPart.CFrame * CFrame.new(0,30,0),350)
-							end
-						elseif v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-							if t1 then
-								t1:Cancel()
-							end
-							EquipWeapon("Melee")
-							if tick() - LastRotate >= 0.1 then
-								AttackRotation = (AttackRotation + 180) % 360
-								LastRotate = tick()
-							end
-							LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0,30,0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-                            -- task.spawn(function()
-                            --     v1 = BringMob(v)
-                            -- end)
-							title.Text = "Skip Farming Level | Kill " .. v.Name
-							v.Humanoid.JumpPower = 0
-							v.Humanoid.WalkSpeed = 0
-							v.HumanoidRootPart.CanCollide = false
-							Attack(v)
-						end
-					until LocalPlayer.Data.Level.Value >= 25 or not workspace.Enemies:FindFirstChild("Dark Master") or not v or not v.Parent or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0
+                    SmartMoveAndAttack(v, QuestTitle, Quest)
 				else
 					local t0 = Tween(CFrame.new(-5250, 389, -2272),350)
 					if (CFrame.new(-5250, 389, -2272).Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
@@ -982,32 +984,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 					break
 				end
 				if v.Name == "Royal Squad" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-					local t1
-					repeat task.wait()
-						if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-							if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-								t1 = Tween(v.HumanoidRootPart.CFrame * CFrame.new(0,30,0),350)
-							end
-						elseif v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-							if t1 then
-								t1:Cancel()
-							end
-							EquipWeapon("Melee")
-							if tick() - LastRotate >= 0.1 then
-								AttackRotation = (AttackRotation + 180) % 360
-								LastRotate = tick()
-							end
-							LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0,30,0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-                            -- task.spawn(function()
-                            --     v1 = BringMob(v)
-                            -- end)
-							title.Text = "Skip Farming Level | Kill " .. v.Name
-							v.Humanoid.JumpPower = 0
-							v.Humanoid.WalkSpeed = 0
-							v.HumanoidRootPart.CanCollide = false
-							Attack(v)
-						end
-					until LocalPlayer.Data.Level.Value >= 60 or not workspace.Enemies:FindFirstChild("Royal Squad") or not v or not v.Parent or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0
+                    SmartMoveAndAttack(v, QuestTitle, Quest)
 				else
 					local t0 = Tween(CFrame.new(-7670, 5607, -1460),350)
 					if (CFrame.new(-7670, 5607, -1460).Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
@@ -1045,37 +1022,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 			for _,v in pairs(workspace.Enemies:GetChildren()) do
 				if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
 					if string.find(QuestTitle.Text, NameCheckQuest) then
-						local t1
-						repeat task.wait()
-							if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
-								if (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-									if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-										t1 = Tween(v.HumanoidRootPart.CFrame * CFrame.new(0,30,0),350)
-									end
-								elseif (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-									if t1 then
-										t1:Cancel()
-									end
-									EquipWeapon("Melee")
-									if tick() - LastRotate >= 0.1 then
-										AttackRotation = (AttackRotation + 180) % 360
-										LastRotate = tick()
-									end
-									LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0,30,0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-                                    -- task.spawn(function()
-                                    --     v1 = BringMob(v)
-                                    -- end)
-									title.Text = "Auto Farming Level | Kill " .. v.Name
-									v.Humanoid.JumpPower = 0
-									v.Humanoid.WalkSpeed = 0
-									v.HumanoidRootPart.CanCollide = false
-									Attack(v)
-								end
-							end
-						until not workspace.Enemies:FindFirstChild(Monster) or not string.find(QuestTitle.Text, NameCheckQuest) or not v or not v.Parent or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0 or not Quest.Visible
-						if Quest.Visible == false then
-							break
-						end
+                        SmartMoveAndAttack(v, QuestTitle, Quest)
 					else
 						CommF_:InvokeServer("AbandonQuest")
 					end
@@ -1100,23 +1047,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
 		if workspace.Enemies:FindFirstChild("Core") then
 			for _,v in pairs(workspace.Enemies:GetChildren()) do
 				if v.Name == "Core" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
-					local t1
-					repeat task.wait()
-						if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
-							if (v.PrimaryPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-								if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-									t1 = Tween(v.PrimaryPart.CFrame,350)
-								end
-							elseif (v.PrimaryPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-								if t1 then
-									t1:Cancel()
-								end
-								EquipWeapon("Melee")
-								LocalPlayer.Character.HumanoidRootPart.CFrame = v.PrimaryPart.CFrame
-								Attack(v)
-							end
-						end
-					until not v or not v:FindFirstChild("Humanoid")
+                    SmartMoveAndAttack(v, QuestTitle, Quest)
 				end
 			end
 		elseif ReplicatedStorage:FindFirstChild("Core") then
@@ -1129,34 +1060,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
                     if workspace.Enemies:FindFirstChild("Swan Pirate") then
                         for _, v in pairs(workspace.Enemies:GetChildren()) do
                             if v.Name == "Swan Pirate" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                                local t1
-                                repeat task.wait()
-                                    if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
-                                        if (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-                                            if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-                                                t1 = Tween(v.HumanoidRootPart.CFrame * CFrame.new(0,30,0),350)
-                                            end
-                                        elseif (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-                                            if t1 then
-                                                t1:Cancel()
-                                            end
-                                            EquipWeapon("Melee")
-                                            if tick() - LastRotate >= 0.1 then
-                                                AttackRotation = (AttackRotation + 180) % 360
-                                                LastRotate = tick()
-                                            end
-                                            LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0,30,0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-                                            -- task.spawn(function()
-                                            --     v1 = BringMob(v)
-                                            -- end)
-                                            title.Text = "Doing Bartilo Quest | Kill 50 Swan Pirates"
-                                            v.Humanoid.JumpPower = 0
-                                            v.Humanoid.WalkSpeed = 0
-                                            v.HumanoidRootPart.CanCollide = false
-                                            Attack(v)
-                                        end
-                                    end
-                                until not v or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0 or LocalPlayer.PlayerGui.Main.Quest.Visible == false
+                                SmartMoveAndAttack(v, QuestTitle, Quest)
                             end
                         end
                     else
@@ -1180,31 +1084,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
             if workspace.Enemies:FindFirstChild("Jeremy") then
                 for _,v in pairs(workspace.Enemies:GetChildren()) do
                     if v.Name == "Jeremy" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                        local t1
-						repeat task.wait()
-							if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
-								if (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-									if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-										t1 = Tween(v.HumanoidRootPart.CFrame * CFrame.new(0,30,0),350)
-									end
-								elseif (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-									if t1 then
-										t1:Cancel()
-									end
-									EquipWeapon("Melee")
-									if tick() - LastRotate >= 0.1 then
-										AttackRotation = (AttackRotation + 180) % 360
-										LastRotate = tick()
-									end
-									LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0,30,0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-									title.Text = "Doing Bartilo Quest | Kill Jeremy"
-									v.Humanoid.JumpPower = 0
-									v.Humanoid.WalkSpeed = 0
-									v.HumanoidRootPart.CanCollide = false
-									Attack(v)
-								end
-							end
-						until not v or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0
+                        SmartMoveAndAttack(v, QuestTitle, Quest)
                     end
                 end
             elseif ReplicatedStorage:FindFirstChild("Jeremy") then
@@ -1232,12 +1112,11 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
             for _, v in ipairs(plates) do
                 if v.plate.BrickColor ~= BrickColor.new("Olivine") then
 					title.Text = "Doing Bartilo Quest | Touching Plates " .. v.num .. "/8"
-					-- firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,0)
-					-- task.wait(0.1)
-					-- firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,1)
-					-- task.wait(0.1)
 					local tbar = Tween(v.plate.CFrame,350)
 					tbar.Completed:Wait()
+					firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,0)
+					task.wait(0.1)
+					firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,1)
 					task.wait(0.1)
                 end
             end
@@ -1259,37 +1138,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
 			for _,v in pairs(workspace.Enemies:GetChildren()) do
 				if v.Name == Monster and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
 					if string.find(QuestTitle.Text, NameCheckQuest) then
-						local t1
-						repeat task.wait()
-							if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
-								if (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
-									if not t1 or t1.PlaybackState ~= Enum.PlaybackState.Playing then
-										t1 = Tween(v.HumanoidRootPart.CFrame * CFrame.new(0,30,0),350)
-									end
-								elseif (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
-									if t1 then
-										t1:Cancel()
-									end
-									EquipWeapon("Melee")
-									if tick() - LastRotate >= 0.1 then
-										AttackRotation = (AttackRotation + 180) % 360
-										LastRotate = tick()
-									end
-									LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0,30,0) * CFrame.Angles(0, math.rad(AttackRotation), 0)
-                                    -- task.spawn(function()
-                                    --     v1 = BringMob(v)
-                                    -- end)
-									title.Text = "Auto Farming Level | Kill " .. v.Name
-									v.Humanoid.JumpPower = 0
-									v.Humanoid.WalkSpeed = 0
-									v.HumanoidRootPart.CanCollide = false
-									Attack(v)
-								end
-							end
-						until not workspace.Enemies:FindFirstChild(Monster) or not string.find(QuestTitle.Text, NameCheckQuest) or not v or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0 or not Quest.Visible
-						if Quest.Visible == false then
-							break
-						end
+                        SmartMoveAndAttack(v, QuestTitle, Quest)
 					else
 						CommF_:InvokeServer("AbandonQuest")
 					end
@@ -1602,7 +1451,7 @@ task.spawn(function()
 	end
 end)
 task.spawn(function()
-	while task.wait(0.5) do
+	while task.wait() do
 		if LocalPlayer.Data.Points.Value > 0 then
 			local Melee = LocalPlayer.Data.Stats.Melee.Level.Value
 			local Defense = LocalPlayer.Data.Stats.Defense.Level.Value
