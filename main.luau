@@ -811,7 +811,7 @@ local function SmartMoveAndAttack(mainMob, QuestTitle, Quest)
                 tween = nil
             end
             EquipWeapon("Melee")
-            if tick() - LastRotate >= 0.3 then
+            if tick() - LastRotate >= 0.25 then
                 AttackRotation = (AttackRotation + 180) % 360
                 LastRotate = tick()
             end
@@ -825,9 +825,6 @@ local function SmartMoveAndAttack(mainMob, QuestTitle, Quest)
 
     until not workspace.Enemies:FindFirstChild(Monster) or not string.find(QuestTitle.Text, NameCheckQuest) or not mainMob or not mainMob:FindFirstChild("Humanoid") or mainMob.Humanoid.Health <= 0 or not Quest.Visible
         or (secondMob and (not secondMob.Parent or not secondMob:FindFirstChild("Humanoid") or secondMob.Humanoid.Health <= 0) and humanoid.Health <= 0)
-    if tween then
-        tween:Cancel()
-    end
     return humanoid.Health <= 0
 end
 local function KaitunWorld1(Quest,QuestTitle,Level)
@@ -897,16 +894,18 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 				CommF_:InvokeServer("ProQuestProgress","GetTorch")
 			end
 		else
-			for _, v in workspace.Map.Jungle.QuestPlates:GetChildren() do
+			for i, v in workspace.Map.Jungle.QuestPlates:GetChildren() do
 				if v:IsA("Model") then
 					if v.Button.BrickColor ~= BrickColor.new("Camo") then
-                        title.Text = "Doing Saber Quest | Touching Plates " .. v.num .. "/5"
-                        local tbar = Tween(v.plate.CFrame,350)
+                        title.Text = "Doing Saber Quest | Touching Plates " .. i .. "/5"
+                        local tbar = Tween(v.Button.CFrame,350)
                         tbar.Completed:Wait()
-						firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,0)
-						task.wait(0.1)
-						firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,1) 
-						task.wait(0.1)
+                        if firetouchinterest or identifyexecutor() ~= "Solara" then
+                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,0)
+                            task.wait(0.1)
+                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,1) 
+                            task.wait(0.1)
+                        end
 					end
 				end
 			end
