@@ -736,7 +736,7 @@ local function GetNearestMob(originMob, maxDistance)
     local nearestDistance = math.huge
     for _, mob in ipairs(workspace.Enemies:GetChildren()) do
         if mob ~= originMob
-        and mob.Name == Monster
+        and mob.Name == originMob.Name
         and mob.Parent
         and mob:FindFirstChild("Humanoid")
         and mob:FindFirstChild("HumanoidRootPart")
@@ -752,8 +752,8 @@ local function GetNearestMob(originMob, maxDistance)
     return nearest
 end
 
-local function SmartMoveAndAttack(mainMob, QuestTitle, Quest, CustomCF)
-    IsCheckQuest = IsCheckQuest or false
+local function SmartMoveAndAttack(mainMob, QuestTitle, Quest, IsCheckQuest)
+    IsCheckQuest = IsCheckQuest or true
     pcall(sethiddenproperty, LocalPlayer, "SimulationRadius", math.huge)
     if not mainMob or not mainMob.Parent or not mainMob:FindFirstChild("Humanoid") or not mainMob:FindFirstChild("HumanoidRootPart") then
         return false
@@ -819,8 +819,7 @@ local function SmartMoveAndAttack(mainMob, QuestTitle, Quest, CustomCF)
                 Attack(mainMob)
             end
         end
-    until (IsCheckQuest and not workspace.Enemies:FindFirstChild(Monster))
-        or (IsCheckQuest and not string.find(QuestTitle.Text, NameCheckQuest)) 
+    until (IsCheckQuest and not string.find(QuestTitle.Text, NameCheckQuest)) 
         or not mainMob 
         or not mainMob:FindFirstChild("Humanoid") 
         or mainMob.Humanoid.Health <= 0 
@@ -902,12 +901,12 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
                         title.Text = "Doing Saber Quest | Touching Plates " .. i .. "/5"
                         local tbar = Tween(v.Button.CFrame,350)
                         tbar.Completed:Wait()
-                        if firetouchinterest or identifyexecutor() ~= "Solara" then
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,0)
-                            task.wait(0.1)
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,1) 
-                            task.wait(0.1)
-                        end
+                        -- if firetouchinterest or identifyexecutor() ~= "Solara" then
+                        --     firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,0)
+                        --     task.wait(0.1)
+                        --     firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,1) 
+                        --     task.wait(0.1)
+                        -- end
 					end
 				end
 			end
@@ -1099,10 +1098,10 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
 					title.Text = "Doing Bartilo Quest | Touching Plates " .. v.num .. "/8"
 					local tbar = Tween(v.plate.CFrame,350)
 					tbar.Completed:Wait()
-					firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,0)
-					task.wait(0.1)
-					firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,1)
-					task.wait(0.1)
+					-- firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,0)
+					-- task.wait(0.1)
+					-- firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,1)
+					-- task.wait(0.1)
                 end
             end
         end
