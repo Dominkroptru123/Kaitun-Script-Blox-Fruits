@@ -75,14 +75,12 @@ local function Tween(target, speed)
         fixvelo.Parent = hrp
     end
     if closestEntrance and minEntranceDist < (hrp.Position - target.Position).Magnitude then
+		IsTweening = true
         CommF_:InvokeServer("requestEntrance", closestEntrance)
-        hrp = character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return nil end
     end
     local distance = (hrp.Position - target.Position).Magnitude
     local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
     local tween = TweenService:Create(hrp, tweenInfo, {CFrame = target})
-    IsTweening = true
     tween:Play()
 	task.spawn(function()
 		while tween.PlaybackState == Enum.PlaybackState.Playing do
@@ -351,7 +349,7 @@ if placeid == 2753915549 then
 		Vector3.new(-4607.8227539063, 872.54248046875, -1667.5568847656),
 		Vector3.new(-7894.6176757813, 5547.1416015625, -380.29119873047),
 	}
-elseif placeid == 4442272183 then
+elseif placeid == 79091703265657 then
     World2 = true
 	Entrance = {
 		Vector3.new(923.21252441406, 126.9760055542, 32852.83203125),
@@ -752,8 +750,9 @@ local function GetNearestMob(originMob, maxDistance)
     return nearest
 end
 
-local function SmartMoveAndAttack(mainMob, QuestTitle, Quest, IsCheckQuest)
-    IsCheckQuest = IsCheckQuest or true
+local function SmartMoveAndAttack(mainMob, QuestTitle, Quest, IsCheckQuest, CustomName)
+	if IsCheckQuest == nil then IsCheckQuest = true end
+	CustomName = CustomName or NameCheckQuest
     pcall(sethiddenproperty, LocalPlayer, "SimulationRadius", math.huge)
     if not mainMob or not mainMob.Parent or not mainMob:FindFirstChild("Humanoid") or not mainMob:FindFirstChild("HumanoidRootPart") then
         return false
@@ -774,6 +773,7 @@ local function SmartMoveAndAttack(mainMob, QuestTitle, Quest, IsCheckQuest)
     local secondMob = nil
     local tween
     repeat task.wait()
+		title.Text = "Auto Farming Level | Kill " .. mainMob.Name
         if not secondMob then
             secondMob = GetNearestMob(mainMob, 350)
         end
@@ -819,13 +819,13 @@ local function SmartMoveAndAttack(mainMob, QuestTitle, Quest, IsCheckQuest)
                 Attack(mainMob)
             end
         end
-    until (IsCheckQuest and not string.find(QuestTitle.Text, NameCheckQuest)) 
+		--print(IsCheckQuest and not string.find(QuestTitle.Text, CustomName) or false)
+    until (IsCheckQuest and (not string.find(QuestTitle.Text, NameCheckQuest)) or false) 
         or not mainMob 
-        or not mainMob:FindFirstChild("Humanoid") 
-        or mainMob.Humanoid.Health <= 0 
-        or (IsCheckQuest and not Quest.Visible)
-        or (secondMob and (not secondMob.Parent or not secondMob:FindFirstChild("Humanoid") or secondMob.Humanoid.Health <= 0) and humanoid.Health <= 0)
-        
+        or not mainMob:FindFirstChild("Humanoid")
+        or (mainMob.Humanoid.Health <= 0)
+        or (IsCheckQuest and not Quest.Visible or false)
+		or (secondMob and (not secondMob:FindFirstChild("Humanoid") and not secondMob.Humanoid.Health <= 0) or false)
     return humanoid.Health <= 0
 end
 local function KaitunWorld1(Quest,QuestTitle,Level)
@@ -837,7 +837,9 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 				if workspace.Enemies:FindFirstChild("Ice Admiral") then
 					for _, v in workspace.Enemies:GetChildren() do
 						if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == "Ice Admiral" then
-                            SmartMoveAndAttack(v, QuestTitle.Text, Quest, true)
+                            SmartMoveAndAttack(v, QuestTitle, Quest, false)
+							title.Text = "Travel To Second Sea"
+							CommF_:InvokeServer("TravelDressrosa")
 						end
 					end
 				else
@@ -862,7 +864,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 						if workspace.Enemies:FindFirstChild("Mob Leader") then
 							for _, v in workspace.Enemies:GetChildren() do
 								if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == "Mob Leader" then
-                                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
+                                    SmartMoveAndAttack(v, QuestTitle, Quest, false)
 								end
 							end
 						else
@@ -901,6 +903,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
                         title.Text = "Doing Saber Quest | Touching Plates " .. i .. "/5"
                         local tbar = Tween(v.Button.CFrame,350)
                         tbar.Completed:Wait()
+						task.wait(0.5)
                         -- if firetouchinterest or identifyexecutor() ~= "Solara" then
                         --     firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.Button,0)
                         --     task.wait(0.1)
@@ -916,7 +919,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 		if workspace.Enemies:FindFirstChild("Saber Expert") then
 			for _, v in workspace.Enemies:GetChildren() do
 				if v.Name == "Saber Expert" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
+                    SmartMoveAndAttack(v, QuestTitle, Quest, false)
 				end
 			end
 		elseif ReplicatedStorage:FindFirstChild("Saber Expert") then
@@ -935,7 +938,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 		if workspace.Enemies:FindFirstChild("Thunder God") then
 			for _, v in workspace.Enemies:GetChildren() do
 				if v.Name == "Thunder God" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
+                    SmartMoveAndAttack(v, QuestTitle, Quest, false)
 				end
 			end
 		elseif ReplicatedStorage:FindFirstChild("Thunder God") then
@@ -956,7 +959,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 					break
 				end
 				if v.Name == "Dark Master" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
+                    SmartMoveAndAttack(v, QuestTitle, Quest, false)
 				end
 			end
 		else
@@ -976,7 +979,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 					break
 				end
 				if v.Name == "Royal Squad" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
+                    SmartMoveAndAttack(v, QuestTitle, Quest, false)
 				end
 			end
 		else
@@ -1013,7 +1016,7 @@ local function KaitunWorld1(Quest,QuestTitle,Level)
 				end
 			end
 		else
-			title.Text = "Auto Farming Level | Waiting For " .. Monster
+			title.Text = "Auto Farming Level | Wait For " .. Monster
 			if (CFrameMon.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
 				t0 = Tween(CFrameMon,350)
 			elseif (CFrameMon.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
@@ -1031,7 +1034,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
 		if workspace.Enemies:FindFirstChild("Core") then
 			for _,v in pairs(workspace.Enemies:GetChildren()) do
 				if v.Name == "Core" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
-                    SmartMoveAndAttack(v, QuestTitle, Quest, true)
+                    SmartMoveAndAttack(v, QuestTitle, Quest, false)
 				end
 			end
 		elseif ReplicatedStorage:FindFirstChild("Core") then
@@ -1044,11 +1047,11 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
                     if workspace.Enemies:FindFirstChild("Swan Pirate") then
                         for _, v in pairs(workspace.Enemies:GetChildren()) do
                             if v.Name == "Swan Pirate" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                                SmartMoveAndAttack(v, QuestTitle, Quest, true)
+                                SmartMoveAndAttack(v, QuestTitle, Quest, false, "Swan Pirate")
                             end
                         end
                     else
-                        title.Text = "Doing Bartilo Quest | Waiting For Swan Pirates"
+                        title.Text = "Doing Bartilo Quest | Wait For Swan Pirates"
                         if (CFrame.new(878, 122, 1235).Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
                             t0 = Tween(CFrame.new(878, 122, 1235),350)
                         elseif (CFrame.new(878, 122, 1235).Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
@@ -1068,7 +1071,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
             if workspace.Enemies:FindFirstChild("Jeremy") then
                 for _,v in pairs(workspace.Enemies:GetChildren()) do
                     if v.Name == "Jeremy" and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                        SmartMoveAndAttack(v, QuestTitle, Quest, true)
+                        SmartMoveAndAttack(v, QuestTitle, Quest, false)
                     end
                 end
             elseif ReplicatedStorage:FindFirstChild("Jeremy") then
@@ -1093,17 +1096,38 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
             table.sort(plates, function(a, b)
                 return a.num < b.num
             end)
-            for _, v in ipairs(plates) do
-                if v.plate.BrickColor ~= BrickColor.new("Olivine") then
-					title.Text = "Doing Bartilo Quest | Touching Plates " .. v.num .. "/8"
-					local tbar = Tween(v.plate.CFrame,350)
-					tbar.Completed:Wait()
-					-- firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,0)
-					-- task.wait(0.1)
-					-- firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,1)
-					-- task.wait(0.1)
-                end
-            end
+            -- for _, v in ipairs(plates) do
+            --     if v.plate.BrickColor ~= BrickColor.new("Olivine") then
+			-- 		title.Text = "Doing Bartilo Quest | Touching Plates " .. v.num .. "/8"
+			-- 		-- repeat task.wait()
+			-- 		-- 	local tbar = Tween(v.plate.CFrame,350)
+			-- 		-- 	tbar.Completed:Wait()
+			-- 		-- until v.plate.BrickColor == BrickColor.new("Olivine")
+			-- 		-- -- firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,0)
+			-- 		-- -- task.wait(0.1)
+			-- 		-- -- firetouchinterest(LocalPlayer.Character.HumanoidRootPart,v.plate,1)
+			-- 		-- -- task.wait(0.1)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1837.46155, 44.2921753, 1656.1987, 0.999881566, -1.03885048e-22, -0.0153914848, 1.07805858e-22, 1, 2.53909284e-22, 0.0153914848, -2.55538502e-22, 0.999881566)
+					task.wait(1)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1836.0, 11, 1714)
+					task.wait(.5)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1850.49329, 13.1789551, 1750.89685)
+					task.wait(1)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1858.87305, 19.3777466, 1712.01807)
+					task.wait(1)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1803.94324, 16.5789185, 1750.89685)
+					task.wait(1)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1858.55835, 16.8604317, 1724.79541)
+					task.wait(1)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1869.54224, 15.987854, 1681.00659)
+					task.wait(1)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1800.0979, 16.4978027, 1684.52368)
+					task.wait(1)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1819.26343, 14.795166, 1717.90625)
+					task.wait(1)
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1813.51843, 14.8604736, 1724.79541)
+            --     end
+            -- end
         end
     elseif not Quest.Visible then
 		title.Text = "Auto Farming Level | Get Quest"
@@ -1129,7 +1153,7 @@ local function KaitunWorld2(Quest,QuestTitle,Level)
 				end
 			end
 		else
-			title.Text = "Auto Farming Level | Waiting For " .. Monster
+			title.Text = "Auto Farming Level | Wait For " .. Monster
 			if (CFrameMon.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 150 then
 				t0 = Tween(CFrameMon,350)
 			elseif (CFrameMon.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
