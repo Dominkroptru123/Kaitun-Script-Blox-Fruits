@@ -55,6 +55,7 @@ local function TeleportServer(cursor)
 end
 local IsTweening = false
 local function Tween(target, speed)
+	speed = 325
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
@@ -74,8 +75,8 @@ local function Tween(target, speed)
         fixvelo.Velocity = Vector3.zero
         fixvelo.Parent = hrp
     end
+	IsTweening = true
     if closestEntrance and minEntranceDist < (hrp.Position - target.Position).Magnitude then
-		IsTweening = true
         CommF_:InvokeServer("requestEntrance", closestEntrance)
     end
     local distance = (hrp.Position - target.Position).Magnitude
@@ -1316,7 +1317,7 @@ task.spawn(function()
 							local riyu = Tween(v.Handle.CFrame,350)
 							title.Text = "Get " .. v.Name
 							riyu.Completed:Wait()
-							task.wait(0.25)
+							task.wait(0.5)
 						elseif (v.Handle.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 150 then
 							LocalPlayer.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
 							title.Text = "Get " .. v.Name
