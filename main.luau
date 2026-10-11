@@ -1,3 +1,4 @@
+--[[
 getgenv().Configs = {
 	Team = "Marines",
 	FixLag = false,
@@ -7,6 +8,7 @@ getgenv().Configs = {
 	SkullGuitar = false,
 	RaceV3 = false
 }
+--]]
 
 local Config = getgenv().Configs
 
