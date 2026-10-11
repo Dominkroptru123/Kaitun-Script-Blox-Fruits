@@ -3,6 +3,7 @@ getgenv().Configs = {
 	Team = "Pirates",
 	FixLag = false,
 	FPS = 60,
+	WhiteScreen = false,
 	Godhuman = true,
 	Saber = true,
 	CursedDualKatana = true,
@@ -47,6 +48,10 @@ TeleportService.TeleportInitFailed:Connect(function(player, result, err)
 	end
 end)
 
+if Config.WhiteScreen then
+	RunService:Set3dRenderingEnabled(false)
+	print("white screen applied")
+end
 if Config.FixLag then
 	pcall(function()
 		for _,v in pairs(Lighting:GetChildren()) do
@@ -54,6 +59,23 @@ if Config.FixLag then
 				v.Enabled = false
 			end
 		end
+		local function optimize(obj)
+			if obj:IsA("BasePart") then
+				obj.Material = Enum.Material.Plastic
+				obj.Reflectance = 0
+			elseif obj:IsA("Decal") or obj:IsA("Texture") then
+				obj:Destroy()
+			elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+				obj.Enabled = false
+			elseif obj:IsA("Explosion") then
+				obj.BlastPressure = 0
+				obj.BlastRadius = 0
+			end
+		end
+		for _,v in pairs(game:GetDescendants()) do
+			optimize(v)
+		end
+		game.DescendantAdded:Connect(optimize)
 		Lighting.GlobalShadows = false
 		Lighting.FogEnd = 9e9
 		Lighting.Brightness = 0
@@ -69,6 +91,11 @@ if Config.FixLag then
 	print("lag fix applied")
 end
 
+if Config.FPS then
+	setfpscap(Config.FPS)
+	print("fps cap set to " .. Config.FPS)
+end
+
 print("waiting for team...")
 
 if not LocalPlayer.Team then
@@ -76,7 +103,7 @@ if not LocalPlayer.Team then
 		CommF_:InvokeServer("SetTeam", Configs.Team)
 	until LocalPlayer.Team
 end
-repeat task.wait() until LocalPlayer.Character
+repeat task.wait(0.1) until LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 
 print("team selected")
 
@@ -89,6 +116,9 @@ print("camera shaker disabled")
 print("initializing...")
 
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+LocalPlayer.CharacterAdded:Connect(function(v)
+	Character = v
+end)
 
 pcall(function()
 	LocalPlayer.PlayerGui.ChildAdded:Connect(function(child)
@@ -2956,10 +2986,6 @@ end
 local function GetSwanKilled()
 	return SWAN_KILLED
 end
-
-LocalPlayer.CharacterAdded:Connect(function(v)
-	Character = v
-end)
 
 task.spawn(function()
 	for _, v in {"EASTEREXP", "BANEXPLOIT", "NOMOREHACKS", "WildDares", "BossBuild", "GetPranked", "EARN_FRUITS", "Sub2UncleKizaru", "FIGHT4FRUIT", "kittgaming", "TRIPLEABUSE", "Sub2CaptainMaui", "Sub2Fer999", "Enyu_is_Pro", "Magicbus", "JCWK", "Starcodeheo", "Bluxxy", "SUB2GAMERROBOT_EXP1", "Sub2NoobMaster123", "Sub2Daigrock", "Axiore", "TantaiGaming", "StrawHatMaine", "Sub2OfficialNoobie", "TheGreatAce", "SEATROLLIN", "24NOADMIN", "ADMIN_TROLL", "NEWTROLL", "SECRET_ADMIN", "staffbattle", "NOEXPLOIT", "NOOB2ADMIN", "CODESLIDE", "fruitconcepts"} do
