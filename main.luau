@@ -2,6 +2,7 @@
 getgenv().Configs = {
 	Team = "Pirates",
 	FixLag = false,
+	FPS = 60,
 	Godhuman = true,
 	Saber = true,
 	CursedDualKatana = true,
@@ -128,9 +129,10 @@ RunService.Stepped:Connect(function()
 end)
 
 local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "KaitunUIKrita"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
-ScreenGui.Parent = LocalPlayer.PlayerGui
+ScreenGui.Parent = identifyexecutor() ~= "Volcano" and CoreGui or LocalPlayer.PlayerGui
 local frame = Instance.new("Frame", ScreenGui)
 frame.Size = UDim2.new(0, 560, 0, 130)
 frame.Position = UDim2.new(0.5, -280, 0, 60)
@@ -169,7 +171,7 @@ timeLabel.Font = Enum.Font.GothamSemibold
 timeLabel.TextSize = 18
 timeLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
 timeLabel.LayoutOrder = 3
-local function SetStatus(text)
+function SetStatus(text)
     title.Text = text
 end
 task.spawn(function()
@@ -385,6 +387,95 @@ local function Tween(v, speed, high)
     end
     SmartTween(v)
     return RunTween(v, high)
+end
+
+local function WaitForAliveCharacter()
+    while true do
+        local character = LocalPlayer.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        if character and humanoid and humanoid.Health > 0 and root then
+            return character, humanoid, root
+        end
+        task.wait(0.1)
+    end
+end
+
+local function TweenWithRespawnRetry(target, speed, high)
+    while true do
+        local startCharacter, humanoid, root = WaitForAliveCharacter()
+        local died = false
+        local activeTween = nil
+
+        local diedConnection = humanoid.Died:Connect(function()
+            died = true
+            if activeTween then
+                pcall(function()
+                    activeTween:Cancel()
+                end)
+            end
+        end)
+
+        local ok, tweenOrError = pcall(function()
+            return Tween(target, speed, high)
+        end)
+
+        if ok and tweenOrError then
+            activeTween = tweenOrError
+
+            local finished = false
+            local playbackState = nil
+            local completedConnection = activeTween.Completed:Connect(function(state)
+                playbackState = state
+                finished = true
+            end)
+
+            local currentState = activeTween.PlaybackState
+            if currentState == Enum.PlaybackState.Completed or currentState == Enum.PlaybackState.Cancelled then
+                playbackState = currentState
+                finished = true
+            end
+
+            if died then
+                pcall(function()
+                    activeTween:Cancel()
+                end)
+            end
+
+            while not finished do
+                task.wait(0.05)
+            end
+
+            completedConnection:Disconnect()
+            diedConnection:Disconnect()
+
+            local currentCharacter = LocalPlayer.Character
+            local stillSameCharacter = currentCharacter == startCharacter
+                and humanoid.Parent ~= nil
+                and humanoid.Health > 0
+                and root.Parent ~= nil
+                and not died
+
+            if not stillSameCharacter then
+                task.wait(0.1)
+            elseif playbackState == Enum.PlaybackState.Completed then
+                return true
+            else
+                return false
+            end
+        else
+            diedConnection:Disconnect()
+            local characterChanged = LocalPlayer.Character ~= startCharacter
+            if died or characterChanged or humanoid.Health <= 0 or not root.Parent then
+                task.wait(0.1)
+            else
+                if not ok then
+                    warn("TweenWithRespawnRetry failed: " .. tostring(tweenOrError))
+                end
+                return false
+            end
+        end
+    end
 end
 
 task.spawn(function()
@@ -838,12 +929,13 @@ local function TakeQuest()
 		return
 	end
 	local q = GetQuest()
-	if not GetQuestData() or QuestController.CurrentQuestName ~= q.NameQuest then
+	if q and q.NameQuest and q.ID and (not GetQuestData() or QuestController.CurrentQuestName ~= q.NameQuest) then
 		local questPos = GetQuestPosition()
-		if questPos then
-			Tween(questPos, 350).Completed:Wait()
+		if questPos and TweenWithRespawnRetry(questPos, 350) then
 			task.wait(0.25)
-			CommF_:InvokeServer("StartQuest", q.NameQuest, q.ID)
+			if LocalPlayer:DistanceFromCharacter(questPos) <= 15 then
+				CommF_:InvokeServer("StartQuest", q.NameQuest, q.ID)
+			end
 		end
 	end
 	lastTakeQuest = tick()
@@ -1010,8 +1102,7 @@ local function TakeQuestCake(b)
 			end
 		end
 
-		Tween(p, 350).Completed:Wait()
-		if LocalPlayer:DistanceFromCharacter(p) < 5 then
+		if p and TweenWithRespawnRetry(p, 350) and LocalPlayer:DistanceFromCharacter(p) < 5 then
 			task.wait(1)
 			CommF_:InvokeServer("StartQuest", tostring(qn), id)
 			task.wait(0.5)
@@ -1050,8 +1141,7 @@ local function TakeQuestBone(b)
 			end
 		end
 
-		Tween(p, 350).Completed:Wait()
-		if LocalPlayer:DistanceFromCharacter(p) < 5 then
+		if p and TweenWithRespawnRetry(p, 350) and LocalPlayer:DistanceFromCharacter(p) < 5 then
 			task.wait(1)
 			CommF_:InvokeServer("StartQuest", tostring(qn), id)
 			task.wait(0.5)
@@ -1332,8 +1422,6 @@ local function GetCastleRaid()
 	return nil
 end
 
-print("loaded")
-
 task.spawn(function()
 	while true do
 		if not PAUSE_AUTO_STORE then
@@ -1560,9 +1648,9 @@ BindedMeleeNPCNames.Godhuman = MeleeNPCPosition(nil, nil, Vector3.new(-13774, 33
 local function TweenToMeleeBuyer(name)
 	local p = BindedMeleeNPCNames[name]
 	if p then
-		return Tween(p, 300).Completed:Wait()
+		return TweenWithRespawnRetry(p, 300)
 	end
-	return nil
+	return false
 end
 local function GetMastery(name)
 	local melee = {
@@ -1770,6 +1858,11 @@ local function GetSaber()
 	CommF_:InvokeServer("AbandonQuest")
 	local data = CommF_:InvokeServer("ProQuestProgress")
 	if data.UsedRelic == false then
+		if not workspace.Map:FindFirstChild("Jungle") then
+			repeat task.wait()
+				Tween(CFrame.new(-1254.25439453125, 18.39460563659668, 342.31976318359375), 350)
+			until workspace.Map:FindFirstChild("Jungle")
+		end
 		if workspace.Map.Jungle.QuestPlates.Door.Transparency == 0 then
 			for _, v in workspace.Map.Jungle.QuestPlates:GetChildren() do
 				if v:IsA("Model") and string.find(v.Name, "Plate") then
@@ -1815,7 +1908,7 @@ local function GetSaber()
 		if CheckMonster("Saber Expert") then
 			KillMonster("Saber Expert")
 		else
-			Tween( ReplicatedStorage.FortBuilderReplicatedSpawnPositionsFolder["Saber Expert"].CFrame * CFrame.new(0, 15, 0), 350 )
+			Tween( ReplicatedStorage.FortBuilderReplicatedSpawnPositionsFolder["Saber Expert"].CFrame * CFrame.new(0, 25, 0), 350 )
 		end
 	end
 end
@@ -2402,15 +2495,37 @@ Name2Name = {
 	["Dark Step"] = "BlackLeg",
 	["Dragon Breath"] = "DragonClaw",
 }
+local lastMeleeDataCheck = 0
 local function CheckMeleeMastery()
-	SetStatus("Getting Melee Data")
-	local data = IRS:GetItems(KEYS.MASTERY)
-	for _, v in data do
-		local item = MATCH(v.ItemId)._ok
-		local n = item.Index.StorageKey
-		if item.Display.Category == "Fighting Style" and n then
-			MeleeData[Name2Name[n] or n:gsub(" ", "")] = v.Value
+	local now = tick()
+	if (now - lastMeleeDataCheck) < 10 then
+		return
+	end
+	lastMeleeDataCheck = now
+
+	if not CheckedMelee then
+		SetStatus("Getting Melee Data")
+	end
+
+	local success = pcall(function()
+		local data = IRS:GetItems(KEYS.MASTERY)
+		for _, v in data do
+			local matched = MATCH(v.ItemId)
+			local item = matched and matched._ok
+			if item and item.Index and item.Display then
+				local n = item.Index.StorageKey
+				if item.Display.Category == "Fighting Style" and n then
+					local key = Name2Name[n] or n:gsub(" ", "")
+					if MeleeData[key] ~= nil then
+						MeleeData[key] = tonumber(v.Value) or MeleeData[key]
+					end
+				end
+			end
 		end
+	end)
+
+	if success then
+		CheckedMelee = true
 	end
 end
 
@@ -2500,6 +2615,8 @@ local function MeleeKaitunLogic()
 		if not CollectionService:HasTag(Character, "Soru") and (beli >= 100000) then
 			CommF_:InvokeServer("BuyHaki", "Soru")
 		end
+	else
+		return
 	end
 	if not CheckedMelee then
 		CheckMeleeMastery()
