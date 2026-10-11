@@ -1,12 +1,12 @@
 --[[
 getgenv().Configs = {
-	Team = "Marines",
+	Team = "Pirates",
 	FixLag = false,
 	Godhuman = true,
-	Saber = false,
-	CursedDualKatana = false,
-	SkullGuitar = false,
-	RaceV3 = false
+	Saber = true,
+	CursedDualKatana = true,
+	SkullGuitar = true,
+	RaceV3 = true
 }
 --]]
 
@@ -75,9 +75,11 @@ if not LocalPlayer.Team then
 		CommF_:InvokeServer("SetTeam", Configs.Team)
 	until LocalPlayer.Team
 end
-repeat wait() until LocalPlayer.Character
+repeat task.wait() until LocalPlayer.Character
 
 print("team selected")
+
+task.wait(2.5)
 
 pcall(function() require(ReplicatedStorage.Util.CameraShaker):Stop() end)
 
@@ -299,6 +301,7 @@ local function BreakClouds()
 	if workspace.Map:FindFirstChild("Sky") then
 		for _, v in workspace.Map.Sky:GetChildren() do
 			if v:IsA("MeshPart") and v.Name == "cloud" and (Vector3.new(-4208.15869140625, 1089.8868408203125, -373.052490234375) - v.Position).Magnitude < 50 and not v:GetAttribute("Broken") then
+				EquipWeapon()
                 Character.HumanoidRootPart:PivotTo(v.CFrame)
                 ReplicatedStorage.Modules.Net["RE/RegisterAttack"]:FireServer(0.4)
 				ReplicatedStorage.Modules.Net["RE/RegisterHit"]:FireServer(v)
@@ -2011,13 +2014,10 @@ local function FarmLevelLogic()
 		else
 			TakeQuest()
 			for _, v in {ReplicatedStorage.FortBuilderReplicatedSpawnPositionsFolder, workspace._WorldOrigin.EnemySpawns} do
-				local qData = QuestController.CurrentQuest
 				for _, v2 in v:GetChildren() do
-					if not v2.Name:find("Boss") and qData == v2.Name then
-						repeat
-							task.wait()
+					if not v2.Name:find("Boss") and QuestController.CurrentQuest == v2.Name then
+						repeat task.wait()
 							Tween(v2:GetPivot().Position + Vector3.new(0, 25, 0), 350)
-							task.wait(0.5)
 						until GetMonsterName()
 						break
 					end
