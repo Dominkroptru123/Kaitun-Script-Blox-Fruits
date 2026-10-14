@@ -1,5 +1,5 @@
-
---[[getgenv().Configs = {
+--[[
+getgenv().Configs = {
 	Team = "Pirates",
 	FixLag = false,
 	FPS = 60,
@@ -174,23 +174,24 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "KaitunUIKrita"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
-ScreenGui.Parent = identifyexecutor() ~= "Volcano" and CoreGui or LocalPlayer.PlayerGui
+ScreenGui.Parent = LocalPlayer.PlayerGui
 local frame = Instance.new("Frame", ScreenGui)
 frame.Size = UDim2.new(0, 560, 0, 130)
 frame.Position = UDim2.new(0.5, -280, 0, 60)
 frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-frame.BackgroundTransparency = 0.1
+frame.BackgroundTransparency = 0.05
 local corner = Instance.new("UICorner", frame)
 corner.CornerRadius = UDim.new(0, 12)
 local gradient = Instance.new("UIGradient", frame)
 gradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 45)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(172, 224, 112)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(80, 199, 164)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(72, 133, 245))
 })
-gradient.Rotation = 90
+gradient.Rotation = 0
 local edge = Instance.new("UIStroke", frame)
-edge.Color = Color3.fromRGB(0, 0, 0)
-edge.Thickness = 4
+edge.Color = Color3.fromRGB(196, 196, 196)
+edge.Thickness = 3
 edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 local layout = Instance.new("UIListLayout", frame)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -200,10 +201,10 @@ layout.Padding = UDim.new(0, 6)
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -20, 0, 35)
 title.BackgroundTransparency = 1
-title.Text = "Idling"
+title.Text = "krita++ | initializing"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 24
-title.TextColor3 = Color3.fromRGB(220, 220, 220)
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.LayoutOrder = 1
 local timeLabel = Instance.new("TextLabel", frame)
 timeLabel.Size = UDim2.new(1, -20, 0, 30)
@@ -211,13 +212,14 @@ timeLabel.BackgroundTransparency = 1
 timeLabel.Text = "00:00:00"
 timeLabel.Font = Enum.Font.GothamSemibold
 timeLabel.TextSize = 18
-timeLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
+timeLabel.TextColor3 = Color3.fromRGB(226, 246, 255)
 timeLabel.LayoutOrder = 3
 function SetStatus(text)
-    if title.Text ~= text then
-        print("status: " .. string.lower(text))
+    local status = string.lower(tostring(text))
+    if title.Text ~= status then
+        print("ui: " .. status)
     end
-    title.Text = text
+    title.Text = status
 end
 task.spawn(function()
     while task.wait(1) do
@@ -395,15 +397,14 @@ local function SmartTween(t)
         }
     elseif World.Sea1() then
         _is = {
-			{ Vector3.new(61163.8515625, 11.6796875, 1819.7841796875), Vector3.new(4050.31103515625, -1.6880035400390625, -1814.1240234375) }, -- under water
-            { Vector3.new(3864.8515625, 6.6796875, -1926.7841796875), Vector3.new(61170.046875, -2, 1952.833984375) }, -- hole up water
-            { Vector3.new(-6023.57666015625, 5469.7197265625, 2203.308349609375), Vector3.new(-4208.15869140625, 1089.8868408203125, -373.052490234375) }, -- sky 2
-            { Vector3.new(-4166.60986328125, 1093.697998046875, -347.16226196289062), Vector3.new(-6020.27734375, 5469.15625, 2209.776123046875) }, -- sky 3
+			{ Vector3.new(61163.8515625, 11.6796875, 1819.7841796875), Vector3.new(4050.31103515625, -1.6880035400390625, -1814.1240234375) },
+            { Vector3.new(3864.8515625, 6.6796875, -1926.7841796875), Vector3.new(61170.046875, -2, 1952.833984375) },
+            { Vector3.new(-4166.60986328125, 1093.697998046875, -347.16226196289062), Vector3.new(-6020.27734375, 5469.15625, 2209.776123046875) },
         }
     else
         return
     end
-	
+
     local min = nil
     local pos = 1
     for i, v in ipairs(_is) do
@@ -417,9 +418,6 @@ local function SmartTween(t)
             end
         end
     end
-	if pos == 3 and World.Sea1() then
-		return
-	end
     local dist = LocalPlayer:DistanceFromCharacter(t)
 	local disttotp = LocalPlayer:DistanceFromCharacter(_is[pos][2])
     if (min + disttotp) < dist and (tick() - LastTravel) >= 1 then
@@ -429,10 +427,6 @@ local function SmartTween(t)
         if tw then
             tw.Completed:Wait()
         end
-		task.wait(0.25)
-		if pos == 3 and World.Sea1() then
-			BreakClouds()
-		end
 		task.wait(0.25)
 		print("travel: requesting entrance")
 		task.wait(0.25)
@@ -969,6 +963,7 @@ end
 
 local function KillMonster(_v)
     LogChange("combat_target", "combat: target " .. string.lower(tostring(_v)))
+    SetStatus("combat | target " .. string.lower(tostring(_v)))
 	while not (Character and Character:FindFirstChildOfClass("Humanoid")) do
 		task.wait()
 	end
@@ -1037,14 +1032,17 @@ local function TakeQuest()
 	if q and q.NameQuest and q.ID and (not GetQuestData() or QuestController.CurrentQuestName ~= q.NameQuest) then
 		local questPos = GetQuestPosition()
         LogChange("quest_travel", questPos and "quest: traveling to npc" or "quest: npc position missing")
+		if not questPos then
+			LogChange("quest_travel", "quest: npc position missing, hopping server")
+			Hop()
+		end
 		if questPos and TweenWithRespawnRetry(questPos, 350) then
 			task.wait(0.25)
 			if LocalPlayer:DistanceFromCharacter(questPos) <= 15 then
                 LogChange("quest_start", "quest: starting " .. string.lower(tostring(q.NameQuest)))
+                SetStatus("quest | starting " .. string.lower(tostring(q.NameQuest)))
 				CommF_:InvokeServer("StartQuest", q.NameQuest, q.ID)
 			end
-		else
-			Hop()
 		end
 	end
 	lastTakeQuest = tick()
@@ -1316,17 +1314,23 @@ end
 
 local function GetSG()
     LogChange("soul_guitar", "soul guitar: checking puzzle")
-	SetStatus("Get Soul Guitar")
 	local check = CommF_:InvokeServer("GuitarPuzzleProgress", "Check")
 	if not check then
 		if Lighting.Sky.MoonTextureId == "http://www.roblox.com/asset/?id=9709149431" and (Lighting.ClockTime > 16 or Lighting.ClockTime < 5) then
+            LogChange("soul_guitar_stage", "soul guitar: doing gravestone ritual")
+            SetStatus("soul guitar | doing gravestone ritual")
 			if LocalPlayer:DistanceFromCharacter(Vector3.new(-8654, 140, 6167)) > 50 then
 				Tween(CFrame.new(-8654, 140, 6167), 350).Completed:Wait()
 			end
 			CommF_:InvokeServer("gravestoneEvent", 2)
 			CommF_:InvokeServer("gravestoneEvent", 2, true)
+        else
+            LogChange("soul_guitar_stage", "soul guitar: waiting for full moon")
+            SetStatus("soul guitar | waiting for full moon")
 		end
 	elseif check.Swamp == false then
+        LogChange("soul_guitar_stage", "soul guitar: clearing swamp")
+        SetStatus("soul guitar | clearing swamp")
 		if (function() local b = 0 for _, v in workspace.Enemies:GetChildren() do if v.Name == "Living Zombie" and v.Humanoid and v.Humanoid.Health > 0 then
 						b = b + 1
 					end
@@ -1367,16 +1371,30 @@ local function GetSG()
 					== 0
 		end
 	elseif check.Gravestones == false then
+        LogChange("soul_guitar_stage", "soul guitar: solving gravestones")
+        SetStatus("soul guitar | solving gravestones")
 		CommF_:InvokeServer("GuitarPuzzleProgress", "Gravestones")
 	elseif check.Ghost == false then
+        LogChange("soul_guitar_stage", "soul guitar: completing ghost challenge")
+        SetStatus("soul guitar | completing ghost challenge")
 		CommF_:InvokeServer("GuitarPuzzleProgress", "Ghost")
 	elseif check.Trophies == false then
+        LogChange("soul_guitar_stage", "soul guitar: completing trophy challenge")
+        SetStatus("soul guitar | completing trophy challenge")
 		CommF_:InvokeServer("GuitarPuzzleProgress", "Trophies")
 	elseif check.Pipes == false then
+        LogChange("soul_guitar_stage", "soul guitar: solving pipes")
+        SetStatus("soul guitar | solving pipes")
 		CommF_:InvokeServer("GuitarPuzzleProgress", "Pipes")
 	elseif check.CraftedOnce == false then
 		if LocalPlayer.Data.Fragments.Value >= 5000 and GetMaterial("Bones") >= 500 and GetMaterial("Ectoplasm") >= 250 then
+            LogChange("soul_guitar_stage", "soul guitar: crafting")
+            SetStatus("soul guitar | crafting")
 			CommF_:InvokeServer("soulGuitarBuy")
+        else
+            LogChange("soul_guitar_stage", "soul guitar: collecting materials")
+            SetStatus("soul guitar | collecting materials")
+            LogChange("soul_guitar_materials", "soul guitar: fragments " .. tostring(LocalPlayer.Data.Fragments.Value) .. "/5000, bones " .. tostring(GetMaterial("Bones")) .. "/500, ectoplasm " .. tostring(GetMaterial("Ectoplasm")) .. "/250")
 		end
 	end
 end
@@ -1390,12 +1408,16 @@ local function UnlockSecondSea()
 		local data = CommF_:InvokeServer("DressrosaQuestProgress")
 		if not data.UsedKey then
 			if not data.TalkedDetective then
+                LogChange("sea2_stage", "sea 2: talking to detective")
+                SetStatus("sea 2 | talking to detective")
 				CommF_:InvokeServer("DressrosaQuestProgress", "Detective")
 			elseif LocalPlayer.Backpack:FindFirstChild("Key") then
 				Character.Humanoid:EquipTool(LocalPlayer.Backpack["Key"])
 			end
 			CommF_:InvokeServer("DressrosaQuestProgress", "UseKey")
 		elseif not data.KilledIceBoss then
+            LogChange("sea2_stage", "sea 2: defeating ice admiral")
+            SetStatus("sea 2 | defeating ice admiral")
 			if CheckMonster("Ice Admiral") then
 				KillMonster("Ice Admiral")
 			else
@@ -1441,6 +1463,8 @@ local function UnlockThirdSea()
 	if CommF_:InvokeServer("GetUnlockables").FlamingoAccess then
 		print("check: " .. tostring(check))
 		if check == 0 then
+            LogChange("sea3_stage", "sea 3: starting rip indra quest")
+            SetStatus("sea 3 | starting rip indra quest")
 			CommF_:InvokeServer("TravelZou")
 			if LocalPlayer:DistanceFromCharacter(Vector3.new(0, 0, 0)) < 20000 then
 				CommF_:InvokeServer("ZQuestProgress", "Begin")
@@ -1451,9 +1475,13 @@ local function UnlockThirdSea()
 				LocalPlayer:Kick("Rejoin to fix blox kid")
 			end
 		elseif check == 1 then
+            LogChange("sea3_stage", "sea 3: continuing quest")
+            SetStatus("sea 3 | continuing quest")
 			CommF_:InvokeServer("TravelZou")
 		else
 			if CheckMonster("Don Swan") then
+                LogChange("sea3_stage", "sea 3: defeating don swan")
+                SetStatus("sea 3 | defeating don swan")
 				KillMonster("Don Swan")
 				SWAN_KILLED = true
 				CommF_:InvokeServer("ZQuestProgress", "Begin")
@@ -1465,6 +1493,8 @@ local function UnlockThirdSea()
 			end
 		end
 	else
+        LogChange("sea3_stage", "sea 3: unlocking flamingo access")
+        SetStatus("sea 3 | unlocking flamingo access")
 		local talk = CommF_:InvokeServer("TalkTrevor", "1")
 		if talk then
 			if talk == 1 or talk ~= 2 then
@@ -1683,7 +1713,8 @@ local function FarmMaterial(material)
 		end
 	end
 	if mob and mob.PrimaryPart and mob.Humanoid and mob.Humanoid.Health > 0 then
-        LogChange("material_target", "material: target found")
+        LogChange("material_target", "material: target found for " .. string.lower(tostring(material)))
+        SetStatus("material | fighting for " .. string.lower(tostring(material)))
 		repeat
 			task.wait()
 			EquipWeapon()
@@ -1697,7 +1728,8 @@ local function FarmMaterial(material)
 			end
 		until not mob or not mob.PrimaryPart or not mob:FindFirstChild("Humanoid") or mob.Humanoid.Health <= 0
 	else
-        LogChange("material_target", "material: waiting for spawn")
+        LogChange("material_target", "material: waiting for " .. string.lower(tostring(material)) .. " spawn")
+        SetStatus("material | waiting for " .. string.lower(tostring(material)) .. " spawn")
 		Tween(materialPos, 350).Completed:Wait()
 	end
 end
@@ -1776,8 +1808,10 @@ local function GetMastery(name)
 end
 
 local function DoRaceV2()
-    LogChange("race_mode", "race: getting v2")
+    LogChange("race_mode", "race v2: checking progress")
 	if not World.Sea2() then
+        LogChange("race_v2_travel", "race v2: traveling to sea 2")
+        SetStatus("race v2 | traveling to sea 2")
 		while true do
 			CommF_:InvokeServer("TravelDressrosa")
 			task.wait(5)
@@ -1786,14 +1820,37 @@ local function DoRaceV2()
 	if not LocalPlayer.Data.Race:FindFirstChild("Evolved") then
 		local check = CommF_:InvokeServer("Alchemist", "1")
 		if check == 0 then
+            LogChange("race_v2_stage", "race v2: talking to alchemist")
+            SetStatus("race v2 | talking to alchemist")
 			CommF_:InvokeServer("Alchemist", "2")
 		elseif check == 1 then
+            if LocalPlayer.Backpack:FindFirstChild("Flower 1") or Character:FindFirstChild("Flower 1") then
+                LogChange("race_v2_flower1", "race v2: flower 1 collected")
+            end
+            if LocalPlayer.Backpack:FindFirstChild("Flower 2") or Character:FindFirstChild("Flower 2") then
+                LogChange("race_v2_flower2", "race v2: flower 2 collected")
+            end
+            if LocalPlayer.Backpack:FindFirstChild("Flower 3") or Character:FindFirstChild("Flower 3") then
+                LogChange("race_v2_flower3", "race v2: flower 3 collected")
+            end
 			if not LocalPlayer.Backpack:FindFirstChild("Flower 1") and not Character:FindFirstChild("Flower 1") then
+                LogChange("race_v2_stage", "race v2: collecting flower 1")
+                SetStatus("race v2 | collecting flower 1")
 				Tween(workspace.Flower1.CFrame, 350)
+				firetouchinterest(workspace.Flower1, Character.HumanoidRootPart, 1)
+				firetouchinterest(workspace.Flower1, Character.HumanoidRootPart, 0)
+                LogChange("race_v2_flower1", "race v2: flower 1 collected")
 			elseif not LocalPlayer.Backpack:FindFirstChild("Flower 2") and not Character:FindFirstChild("Flower 2") then
+                LogChange("race_v2_stage", "race v2: collecting flower 2")
+                SetStatus("race v2 | collecting flower 2")
 				Tween(workspace.Flower2.CFrame, 350)
+				firetouchinterest(workspace.Flower2, Character.HumanoidRootPart, 1)
+				firetouchinterest(workspace.Flower2, Character.HumanoidRootPart, 0)
+                LogChange("race_v2_flower2", "race v2: flower 2 collected")
 			elseif not LocalPlayer.Backpack:FindFirstChild("Flower 3") and not Character:FindFirstChild("Flower 3") then
 				if workspace.Enemies:FindFirstChild("Zombie") then
+                    LogChange("race_v2_stage", "race v2: farming zombie for flower 3")
+                    SetStatus("race v2 | farming zombie for flower 3")
 					for _, v in workspace.Enemies:GetChildren() do
 						if v.Name == "Zombie" then
 							repeat
@@ -1816,12 +1873,19 @@ local function DoRaceV2()
 						end
 					end
 				else
+                    LogChange("race_v2_stage", "race v2: waiting for zombie spawn")
+                    SetStatus("race v2 | waiting for zombie spawn")
 					Tween(CFrame.new(-5685, 48, -853), 350).Completed:Wait()
 				end
 			end
 		elseif check == 2 then
+            LogChange("race_v2_stage", "race v2: submitting flowers")
+            SetStatus("race v2 | submitting flowers")
 			CommF_:InvokeServer("Alchemist", "3")
 		end
+    else
+        LogChange("race_v2_stage", "race v2: already evolved")
+        SetStatus("race v2 | already evolved")
 	end
 end
 
@@ -1832,8 +1896,10 @@ end
 MinkQuestStage = 0
 HumanQuestStage = 0
 local function DoRaceV3()
-    LogChange("race_mode", "race: getting v3")
+    LogChange("race_mode", "race v3: checking progress")
 	if not World.Sea2() then
+        LogChange("race_v3_travel", "race v3: traveling to sea 2")
+        SetStatus("race v3 | traveling to sea 2")
 		while true do
 			CommF_:InvokeServer("TravelDressrosa")
 			task.wait(5)
@@ -1842,10 +1908,14 @@ local function DoRaceV3()
 	local race = LocalPlayer.Data.Race.Value
 	local check = CommF_:InvokeServer("Wenlocktoad", "1")
 	if check == 0 then
+        LogChange("race_v3_stage", "race v3: starting quest")
+        SetStatus("race v3 | starting quest")
 		CommF_:InvokeServer("Wenlocktoad", "2")
 	elseif check == 1 then
 		if race == "Human" then
 			if HumanQuestStage == 0 then
+                LogChange("race_v3_stage", "race v3: fighting jeremy")
+                SetStatus("race v3 | fighting jeremy")
 				if CheckMonster("Jeremy") then
 					KillMonster("Jeremy")
 					HumanQuestStage = 1
@@ -1853,6 +1923,8 @@ local function DoRaceV3()
 					Tween(CFrame.new(2333.209228515625, 449.2427062988281, 699.5128784179688), 300).Completed:Wait()
 				end
 			elseif HumanQuestStage == 1 then
+                LogChange("race_v3_stage", "race v3: fighting diamond")
+                SetStatus("race v3 | fighting diamond")
 				if CheckMonster("Diamond") then
 					KillMonster("Diamond")
 					HumanQuestStage = 2
@@ -1860,6 +1932,8 @@ local function DoRaceV3()
 					Tween(CFrame.new(-1713.5589599609375, 198.99554443359375, -104.31584167480469), 300).Completed:Wait()
 				end
 			elseif HumanQuestStage == 2 then
+                LogChange("race_v3_stage", "race v3: fighting orbitus")
+                SetStatus("race v3 | fighting orbitus")
 				if CheckMonster("Orbitus") then
 					KillMonster("Orbitus")
 					HumanQuestStage = 3
@@ -1867,18 +1941,26 @@ local function DoRaceV3()
 					Tween(CFrame.new(-2148.7568359375, 73.27831268310547, -4304.4130859375), 300).Completed:Wait()
 				end
 			elseif HumanQuestStage == 3 then
+                LogChange("race_v3_stage", "race v3: completing human trial")
+                SetStatus("race v3 | completing human trial")
 				CommF_:InvokeServer("Wenlocktoad", "3")
 			end
 		elseif race == "Rabbit" then
 			for _, v in workspace.ChestModels:GetChildren() do
 				if MinkQuestStage < 30 then
+                    LogChange("race_v3_chests", "race v3: collecting chest " .. tostring(MinkQuestStage + 1) .. "/30")
+                    SetStatus("race v3 | collecting chest " .. tostring(MinkQuestStage + 1) .. "/30")
 					Tween(v.WorldPivot.Position, 350).Completed:Wait()
 					MinkQuestStage = MinkQuestStage + 1
 				elseif MinkQuestStage >= 30 then
+                    LogChange("race_v3_stage", "race v3: completing rabbit trial")
+                    SetStatus("race v3 | completing rabbit trial")
 					CommF_:InvokeServer("Wenlocktoad", "3")
 				end
 			end
 		elseif race == "Fishman" then
+            LogChange("race_v3_stage", "race v3: farming sea beasts")
+            SetStatus("race v3 | farming sea beasts")
 			repeat
 				Seabeast()
 				task.wait(1)
@@ -1886,7 +1968,12 @@ local function DoRaceV3()
 			until GetRaceGrade() == "V3" or not string.find(race, "Fish")
 		end
 	elseif check == 2 then
+        LogChange("race_v3_stage", "race v3: completing trial")
+        SetStatus("race v3 | completing trial")
 		CommF_:InvokeServer("Wenlocktoad", "3")
+    else
+        LogChange("race_v3_stage", "race v3: waiting for trial")
+        SetStatus("race v3 | waiting for trial")
 	end
 end
 
@@ -1919,7 +2006,6 @@ local Travel = {
 
 local function GetGodHuman()
     LogChange("godhuman", "godhuman: checking requirements")
-	SetStatus("Get Godhuman")
 	local check = CommF_:InvokeServer("BuyGodhuman", true)
 	if check ~= 0 and check ~= 1 then
 		for i, v in {"Dragon Scale", "Fish Tail", "Mystic Droplet", "Magma Ore"} do
@@ -1930,7 +2016,7 @@ local function GetGodHuman()
 				max = 20
 			end
 			if GetMaterial(v) < max then
-                LogChange("godhuman_material", "godhuman: need " .. string.lower(v))
+                LogChange("godhuman_material", "godhuman: " .. string.lower(v) .. " " .. tostring(GetMaterial(v)) .. "/" .. tostring(max))
 				if (i == 1 or i == 2) and not World.Sea3() then
 					Travel.Sea3()
 				elseif (i == 3 or i == 4) and not World.Sea2() then
@@ -1942,11 +2028,17 @@ local function GetGodHuman()
 				until GetMaterial(v) >= max
 			end
 		end
+        LogChange("godhuman_stage", "godhuman: traveling to buyer")
+        SetStatus("godhuman | traveling to buyer")
 		Travel.Sea3()
 		TweenToMeleeBuyer("Godhuman")
+        LogChange("godhuman_stage", "godhuman: purchasing style")
+        SetStatus("godhuman | purchasing style")
 		CommF_:InvokeServer("BuyGodhuman", true)
 		CommF_:InvokeServer("BuyGodhuman")
 	else
+        LogChange("godhuman_stage", "godhuman: purchasing style")
+        SetStatus("godhuman | purchasing style")
 		Travel.Sea3()
 		TweenToMeleeBuyer("Godhuman")
 		CommF_:InvokeServer("BuyGodhuman")
@@ -1955,17 +2047,19 @@ end
 
 local function GetSaber()
     LogChange("saber", "saber: checking progress")
-	SetStatus("Get Saber")
 	Travel.Sea1()
 	CommF_:InvokeServer("AbandonQuest")
 	local data = CommF_:InvokeServer("ProQuestProgress")
 	if data.UsedRelic == false then
-		if not workspace.Map:FindFirstChild("Jungle") then
-			repeat task.wait()
-				Tween(CFrame.new(-1254.25439453125, 18.39460563659668, 342.31976318359375), 350)
-			until workspace.Map:FindFirstChild("Jungle")
+        LogChange("saber_stage", "saber: solving jungle puzzle")
+        SetStatus("saber | solving jungle puzzle")
+		while not (workspace.Map:FindFirstChild("Jungle") and workspace.Map.Jungle:FindFirstChild("QuestPlates") and workspace.Map.Jungle.QuestPlates:FindFirstChild("Door")) do
+			task.wait()
+			Tween(CFrame.new(-1254.25439453125, 18.39460563659668, 342.31976318359375), 350)
 		end
 		if workspace.Map.Jungle.QuestPlates.Door.Transparency == 0 then
+            LogChange("saber_stage", "saber: activating jungle plates")
+            SetStatus("saber | activating jungle plates")
 			for _, v in workspace.Map.Jungle.QuestPlates:GetChildren() do
 				if v:IsA("Model") and string.find(v.Name, "Plate") then
 					firetouchinterest(v.Button, Character.HumanoidRootPart, 1)
@@ -1974,6 +2068,8 @@ local function GetSaber()
 			end
 		else
 			if data.UsedTorch == false then
+                LogChange("saber_stage", "saber: collecting torch")
+                SetStatus("saber | collecting torch")
 				if LocalPlayer.Backpack:FindFirstChild("Torch") or Character:FindFirstChild("Torch") then
 					CommF_:InvokeServer("ProQuestProgress", "DestroyTorch")
 				else
@@ -1982,6 +2078,8 @@ local function GetSaber()
 			else
 				if data.UsedCup then
 					if data.TalkedSon and data.KilledMob then
+                        LogChange("saber_stage", "saber: placing relic")
+                        SetStatus("saber | placing relic")
 						if not data.UsedRelic then
 							CommF_:InvokeServer("ProQuestProgress", "RichSon")
 							if not Character:FindFirstChild("Relic") then
@@ -1990,13 +2088,19 @@ local function GetSaber()
 							CommF_:InvokeServer("ProQuestProgress", "PlaceRelic")
 						end
 					elseif data.TalkedSon == false then
+                        LogChange("saber_stage", "saber: talking to rich son")
+                        SetStatus("saber | talking to rich son")
 						CommF_:InvokeServer("ProQuestProgress", "RichSon")
 					elseif data.KilledMob == false then
+                        LogChange("saber_stage", "saber: defeating mob leader")
+                        SetStatus("saber | defeating mob leader")
 						if CheckMonster("Mob Leader") then
 							KillMonster("Mob Leader")
 						end
 					end
 				else
+                    LogChange("saber_stage", "saber: filling cup")
+                    SetStatus("saber | filling cup")
 					CommF_:InvokeServer("ProQuestProgress", "GetCup")
 					if not Character:FindFirstChild("Cup") then
 						Character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild("Cup"))
@@ -2007,6 +2111,8 @@ local function GetSaber()
 			end
 		end
 	else
+        LogChange("saber_stage", "saber: fighting saber expert")
+        SetStatus("saber | fighting saber expert")
 		if CheckMonster("Saber Expert") then
 			KillMonster("Saber Expert")
 		else
@@ -2017,8 +2123,9 @@ end
 
 local function DoBartiloQuest()
     LogChange("bartilo", "bartilo: checking progress")
-	SetStatus("Doing Bartilo Quest")
 	if not World.Sea2() then
+        LogChange("bartilo_travel", "bartilo: traveling to sea 2")
+        SetStatus("bartilo | traveling to sea 2")
 		while true do
 			CommF_:InvokeServer("TravelDressrosa")
 			task.wait(7.5)
@@ -2029,6 +2136,8 @@ local function DoBartiloQuest()
 	end
 	local data = CommF_:InvokeServer("BartiloQuestProgress", "Bartilo")
 	if CheckKilledBanit() == false then
+        LogChange("bartilo_stage", "bartilo: farming swan pirates")
+        SetStatus("bartilo | farming swan pirates")
 		repeat
 			if QuestController.CurrentQuestName ~= "BartiloQuest" then
 				CommF_:InvokeServer("StartQuest", "BartiloQuest", 1)
@@ -2056,6 +2165,8 @@ local function DoBartiloQuest()
 			end
 		until CheckKilledBanit()
 	elseif data == 1 then
+        LogChange("bartilo_stage", "bartilo: defeating jeremy")
+        SetStatus("bartilo | defeating jeremy")
 		if CheckMonster("Jeremy") then
 			KillMonster("Jeremy")
 		else
@@ -2063,6 +2174,8 @@ local function DoBartiloQuest()
 		end
 	elseif data == 2 then
 		for i = 1, 8 do
+            LogChange("bartilo_plate", "bartilo: activating plate " .. tostring(i) .. "/8")
+            SetStatus("bartilo | activating plate " .. tostring(i) .. "/8")
 			firetouchinterest(workspace.Map.Dressrosa.BartiloPlates["Plate" .. i], Character.PrimaryPart, 0)
 			task.wait(0.1)
 			firetouchinterest(workspace.Map.Dressrosa.BartiloPlates["Plate" .. i], Character.PrimaryPart, 1)
@@ -2086,6 +2199,7 @@ local function FarmLevelLogic()
     LogChange("farm_band", "farm: level band " .. tostring(levelData))
 	if levelData == 2 then
         LogChange("farm_target", "farm: targeting shanda")
+        SetStatus("farm | targeting shanda | lv " .. tostring(LocalPlayer.Data.Level.Value))
 		local foundMob = false
 		for _, v in {workspace.Enemies, ReplicatedStorage} do
 			for _, v2 in v:GetChildren() do
@@ -2129,6 +2243,7 @@ local function FarmLevelLogic()
 		end
 	elseif levelData == 3 then
         LogChange("farm_target", "farm: targeting god's guard")
+        SetStatus("farm | targeting god's guard | lv " .. tostring(LocalPlayer.Data.Level.Value))
 		local foundMob = false
 		for _, v in {workspace.Enemies, ReplicatedStorage} do
 			for _, v2 in v:GetChildren() do
@@ -2177,6 +2292,7 @@ local function FarmLevelLogic()
 	elseif levelData == 4 or levelData == 1 then
 		if GetMonsterName() then
             LogChange("farm_target", "farm: targeting quest mob")
+            SetStatus("farm | targeting quest mob | lv " .. tostring(LocalPlayer.Data.Level.Value))
 			for _, v2 in {workspace.Enemies, ReplicatedStorage} do
 				for _, v in v2:GetChildren() do
 					if v.Name == GetMonsterName() and v.PrimaryPart and v:FindFirstChildOfClass("Humanoid") and v:FindFirstChildOfClass("Humanoid").Health > 0 then
@@ -2213,6 +2329,7 @@ local function FarmLevelLogic()
 			end
 		else
             LogChange("farm_target", "farm: waiting for quest mob")
+            SetStatus("farm | waiting for quest mob | lv " .. tostring(LocalPlayer.Data.Level.Value))
 			TakeQuest()
 			for _, v in {ReplicatedStorage.FortBuilderReplicatedSpawnPositionsFolder, workspace._WorldOrigin.EnemySpawns} do
 				for _, v2 in v:GetChildren() do
@@ -2249,6 +2366,8 @@ local function FarmBoneLogic()
 		end
 	end
 	if mob and mob.PrimaryPart and mob:FindFirstChildOfClass("Humanoid") and mob:FindFirstChildOfClass("Humanoid").Health > 0 then
+        LogChange("bone_target", "bone: farming " .. string.lower(mob.Name))
+        SetStatus("bone farm | " .. string.lower(mob.Name))
 		TakeQuestBone(mob.Name)
 		startKillThisNPC = tick()
 		repeat
@@ -2264,6 +2383,8 @@ local function FarmBoneLogic()
 			end
 		until not mob or not mob.PrimaryPart or not mob:FindFirstChildOfClass("Humanoid") or mob.Humanoid.Health <= 0 or (tick() - startKillThisNPC) >= 90
 	else
+        LogChange("bone_target", "bone: waiting for spawn")
+        SetStatus("bone farm | waiting for spawn")
 		Tween(CFrame.new(-9515, 164, 5786), 350).Completed:Wait()
 	end
 end
@@ -2275,6 +2396,8 @@ local function FarmKataLogic()
 		Tween(CFrame.new(-2251, 146, -12196), 350).Completed:Wait()
 	end
 	if GetCakePrince() then
+        LogChange("cake_target", "cake: fighting cake prince")
+        SetStatus("cake farm | fighting cake prince")
 		local Target = GetCakePrince()
 		repeat
 			if LocalPlayer:DistanceFromCharacter(Target.PrimaryPart.CFrame.Position) >= 1200 and GetCakePrince() then
@@ -2305,6 +2428,8 @@ local function FarmKataLogic()
 			end
 		end
 		if mob and table.find(MobsCakePrince, mob.Name) and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+            LogChange("cake_target", "cake: farming " .. string.lower(mob.Name))
+            SetStatus("cake farm | " .. string.lower(mob.Name))
 			TakeQuestCake(mob.Name)
 			startKillThisNPC = tick()
 			repeat
@@ -2336,6 +2461,8 @@ local function GetCDKLogic()
 	local q = CommF_:InvokeServer("CDKQuest", "Progress")
     LogChange("cdk_progress", "cdk: evil " .. tostring(q.Evil) .. " / good " .. tostring(q.Good))
 	if q.Evil == 0 or q.Evil == -3 then
+        LogChange("cdk_stage", "cdk: evil trial - mythological pirate")
+        SetStatus("cdk | evil trial - mythological pirate")
 		CommF_:InvokeServer("CDKQuest", "StartTrial", "Evil")
 		if workspace.Enemies:FindFirstChild("Mythological Pirate") then
 			repeat
@@ -2347,10 +2474,14 @@ local function GetCDKLogic()
 			Tween(Vector3.new(-13239, 520, -6813), 350).Completed:Wait()
 		end
 	elseif q.Evil == 1 or q.Evil == -4 then
+        LogChange("cdk_stage", "cdk: evil trial - haze mobs")
+        SetStatus("cdk | evil trial - haze mobs")
 		CommF_:InvokeServer("CDKQuest", "StartTrial", "Evil")
 		if LocalPlayer:FindFirstChild("QuestHaze") then
 			for _, v in LocalPlayer.QuestHaze:GetChildren() do
 				if v.Value > 0 then
+                    LogChange("cdk_haze_target", "cdk: clearing " .. string.lower(v.Name) .. " " .. tostring(v.Value))
+                    SetStatus("cdk | clearing " .. string.lower(v.Name))
 					repeat
 						task.wait()
 						if LocalPlayer:DistanceFromCharacter( ReplicatedStorage.FortBuilderReplicatedSpawnPositionsFolder[v.Name].CFrame.Position ) >= 600 then
@@ -2375,6 +2506,8 @@ local function GetCDKLogic()
 			end
 		end
 	elseif q.Evil == 2 or q.Evil == -5 then
+        LogChange("cdk_stage", "cdk: evil trial - hell dimension")
+        SetStatus("cdk | evil trial - hell dimension")
 		CommF_:InvokeServer("CDKQuest", "StartTrial", "Evil")
 		if workspace.Enemies:FindFirstChild("Soul Reaper") or workspace.Map:FindFirstChild("HellDimension") then
 			if workspace.Enemies:FindFirstChild("Soul Reaper") and not workspace.Map:FindFirstChild("HellDimension") then
@@ -2388,6 +2521,8 @@ local function GetCDKLogic()
 			end
 			task.wait(1)
 			for i = 1, 3 do
+                LogChange("cdk_torch", "cdk: lighting hell torch " .. tostring(i) .. "/3")
+                SetStatus("cdk | lighting hell torch " .. tostring(i) .. "/3")
 				Tween(workspace.Map.HellDimension["Torch" .. i].CFrame, 350).Completed:Wait()
 				fireproximityprompt(workspace.Map.HellDimension["Torch" .. i].ProximityPrompt)
 				repeat
@@ -2462,6 +2597,8 @@ local function GetCDKLogic()
 			end
 		end
 	elseif q.Good == 0 or q.Good == -3 then
+        LogChange("cdk_stage", "cdk: good trial - finding boats")
+        SetStatus("cdk | good trial - finding boats")
 		CommF_:InvokeServer("CDKQuest", "StartTrial", "Good")
 		for _, x in {CFrame.new(-9550, 21, 4690), CFrame.new(-6120, 16, -2250), CFrame.new(-9530, 7, -8370)} do
 			repeat
@@ -2476,15 +2613,21 @@ local function GetCDKLogic()
 			end
 		end
 	elseif q.Good == 1 or q.Good == -4 then
+        LogChange("cdk_stage", "cdk: good trial - reaching objective")
+        SetStatus("cdk | good trial - reaching objective")
 		CommF_:InvokeServer("CDKQuest", "StartTrial", "Good")
 		Tween(CFrame.new(6148.4116210938, 294.38687133789, -6741.1166992188), 350)
 	elseif q.Good == 2 or q.Good == -5 then
+        LogChange("cdk_stage", "cdk: good trial - heavenly dimension")
+        SetStatus("cdk | good trial - heavenly dimension")
 		CommF_:InvokeServer("CDKQuest", "StartTrial", "Good")
 		if workspace.Map:FindFirstChild("HeavenlyDimension") ~= nil and workspace.Map:FindFirstChild("Heavenly Dimension") then
 			if workspace.Map.HeavenlyDimension.Exit.Color ~= Color3.fromRGB(0, 0, 0) then
 				firetouchinterest( workspace.Map.HeavenlyDimension.Exit.Touchinterest, LocalPlayer.Character.HumanoidRootPart, 0 )
 			else
 				for i = 1, 3 do
+                    LogChange("cdk_heaven_torch", "cdk: lighting heaven torch " .. tostring(i) .. "/3")
+                    SetStatus("cdk | lighting heaven torch " .. tostring(i) .. "/3")
 					repeat
 						task.wait()
 						local e = workspace.Enemies:FindFirstChildWhichIsA("Model", true)
@@ -2617,7 +2760,6 @@ local function CheckMeleeMastery()
 
 	if not CheckedMelee then
         LogChange("melee_data", "melee: checking data")
-		SetStatus("Getting Melee Data")
 	end
 
 	local success = pcall(function()
@@ -2741,7 +2883,7 @@ local function MeleeKaitunLogic()
 	for _, v in {"BlackLeg", "Electro", "FishmanKarate"} do
 		local realName = v:gsub("(%l)(%u)", "%1 %2")
 
-		if (MeleeData[v] or 0) < 400 then
+			if (MeleeData[v] or 0) < 400 then
             LogChange("melee_progress", "melee: " .. string.lower(realName) .. " " .. tostring(MeleeData[v] or 0) .. "/400")
 
 			if (MeleeData[v] or 0) == 0 and LocalPlayer.Data.Beli.Value < MeleePrices[v].Price.Beli then
@@ -2788,7 +2930,6 @@ local function MeleeKaitunLogic()
 				elseif (MeleeData[v] or 0) == 0 and (MeleePrices[v].Price.Fragments and (LocalPlayer.Data.Fragments.Value < MeleePrices[v].Price.Fragments)) and CheckCanDungeon() then
                     LogChange("melee_action", "melee: farming fragments")
 					if (not World.Sea1()) and LocalPlayer.Data.Level.Value >= 1250 then
-						SetStatus("Doing Raids")
 						AutoDungeon()
 					end
 				elseif (MeleeData[v] or 0) == 0 and not hasEnoughEco then
@@ -2827,7 +2968,6 @@ local function MeleeKaitunLogic()
 					return true
 				elseif (MeleeData[v] or 0) == 0 and (MeleePrices[v].Price.Fragments and (LocalPlayer.Data.Fragments.Value < MeleePrices[v].Price.Fragments)) and CheckCanDungeon() then
 					if (not World.Sea1()) and LocalPlayer.Data.Level.Value >= 1250 then
-						SetStatus("Doing Raids")
 						AutoDungeon()
 					end
 				elseif (MeleeData[v] or 0) == 0 and not hasEnoughEco then
@@ -2899,13 +3039,14 @@ end
 
 AutoDungeon = function()
     LogChange("raid", "raid: preparing")
-	SetStatus("Doing Raid")
 	local res = CommF_:InvokeServer("RaidsNpc", "Select", "Dark")
 	while not Character or not Character.PrimaryPart do
 		task.wait()
 	end
 	if not RaidController.isRaiding then
 		if not (LocalPlayer.Backpack:FindFirstChild("Special Microchip") or Character:FindFirstChild("Special Microchip")) then
+            LogChange("raid_stage", "raid: getting microchip")
+            SetStatus("raid | getting microchip")
 			if LocalPlayer.Data.Beli.Value >= 100000 and ((type(res) == "number" and res == 1) or (type(res) == "string" and not res:find("wait"))) then
 				CommF_:InvokeServer("RaidsNpc", "Select", "Dark")
 			else
@@ -2917,11 +3058,15 @@ AutoDungeon = function()
 			end
 		end
 		if World.Sea2() then
+            LogChange("raid_stage", "raid: summoning at sea 2")
+            SetStatus("raid | summoning at sea 2")
 			local clickDetector = workspace.Map.CircleIsland.RaidSummon2:FindFirstChildWhichIsA("ClickDetector", true)
 			if clickDetector then
 				pcall(fireclickdetector, clickDetector)
 			end
 		elseif World.Sea3() then
+            LogChange("raid_stage", "raid: summoning at sea 3")
+            SetStatus("raid | summoning at sea 3")
 			Tween(Vector3.new(-5018, 315, -2828), 300).Completed:Wait()
 			task.wait(1)
 			local clickDetector = workspace.Map["Boat Castle"].RaidSummon2:FindFirstChildWhichIsA("ClickDetector", true)
@@ -2931,16 +3076,18 @@ AutoDungeon = function()
 		end
 		local startWait = tick()
         LogChange("raid_state", "raid: waiting to join")
+        SetStatus("raid | waiting to join")
 		repeat
-			SetStatus("Joining for raid")
+			SetStatus("raid | waiting to join")
 			StopTween()
 			task.wait(0.25)
 		until RaidController.isRaiding or (tick() - startWait) >= 30
         LogChange("raid_state", RaidController.isRaiding and "raid: started" or "raid: join timed out")
+        SetStatus(RaidController.isRaiding and "raid | started" or "raid | join timed out")
 		task.wait(0.5)
 		while RaidController.isRaiding do
             LogChange("raid_state", "raid: clearing island")
-			SetStatus("Clear Raid")
+			SetStatus("raid | clearing island")
 			for _, v in workspace.Enemies:GetChildren() do
 				if v.PrimaryPart and v:FindFirstChildOfClass("Humanoid") and v:FindFirstChildOfClass("Humanoid").Health > 0 and LocalPlayer:DistanceFromCharacter(v.PrimaryPart.Position) <= 2000 then
 					repeat
@@ -2967,6 +3114,8 @@ AutoDungeon = function()
 			for i = 5, 1, -1 do
 				for _, z in workspace["_WorldOrigin"].Locations:GetChildren() do
 					if z.Name == ("Island " .. i) and LocalPlayer:DistanceFromCharacter( workspace["_WorldOrigin"].Locations["Island " .. i]:GetPivot().Position ) <= 6000 then
+                        LogChange("raid_island", "raid: moving to island " .. tostring(i))
+                        SetStatus("raid | moving to island " .. tostring(i))
 						found = true
 						Tween( workspace["_WorldOrigin"].Locations["Island " .. i]:GetPivot() * CFrame.new(100, 70, 100), 350 )
 						task.wait(0.5)
@@ -2986,6 +3135,7 @@ end
 
 local function GetYama()
     LogChange("yama", "yama: unlocking")
+    SetStatus("yama | unlocking")
 	repeat
 		fireclickdetector(workspace.Map.Waterfall.SealedKatana.Hitbox.ClickDetector)
 		task.wait(0.5)
@@ -2999,6 +3149,8 @@ end
 local function GetTushita()
     LogChange("tushita", "tushita: checking progress")
 	if not workspace.Map.Turtle:FindFirstChild("TushitaGate") then
+        LogChange("tushita_stage", "tushita: defeating longma")
+        SetStatus("tushita | defeating longma")
 		if CheckMonster("Longma") then
 			KillMonster("Longma")
 		end
@@ -3010,10 +3162,14 @@ local function GetTushita()
 		end)()
 	then
 		if not Character:FindFirstChild("Holy Torch") and not LocalPlayer.Backpack:FindFirstChild("Holy Torch") then
+            LogChange("tushita_stage", "tushita: collecting holy torch")
+            SetStatus("tushita | collecting holy torch")
 			Tween(workspace.Map.Waterfall.SecretRoom.Room.Door.Door.Hitbox.CFrame, 350).Completed:Wait()
 			task.wait(1)
 		else
 			for i = 1, 5, 1 do
+                LogChange("tushita_torch", "tushita: lighting torch " .. tostring(i) .. "/5")
+                SetStatus("tushita | lighting torch " .. tostring(i) .. "/5")
 				EquipTool("Holy Torch")
 				Tween(workspace.Map.Turtle.QuestTorches["Torch" .. tostring(i)].Particles.Main.Enabled, 350).Completed:Wait()
 			end
@@ -3159,7 +3315,7 @@ task.spawn(function()
 				end)()
 			)
 		then
-			SetStatus("Farm Indra / Dough King")
+            LogChange("main_mode", "mode: farm indra / dough king")
 			if (function() for _, v in {workspace.Enemies, ReplicatedStorage} do for _, v2 in v:GetChildren() do if v2.Name:find("indra") or v2.Name:find("Dough King") then
 								return true
 							end
@@ -3192,6 +3348,8 @@ task.spawn(function()
 					end)() == 3
 				then
 					if not Character:FindFirstChild("God's Chalice") then
+                        LogChange("chalice_stage", "chalice: summoning boss")
+                        SetStatus("chalice | summoning boss")
 						EquipTool("God's Chalice")
 					end
 					pcall(firetouchinterest, workspace.Map["Boat Castle"].Summoner.Detection, Character.PrimaryPart)
@@ -3214,7 +3372,6 @@ task.spawn(function()
 			DoRaceV3()
 		elseif Config.CursedDualKatana and World.Sea3() and GetElite() then
             LogChange("main_mode", "mode: farm elite")
-			SetStatus("Farm Elite")
 			pcall(function()
 				for _, v2 in {workspace.Enemies, ReplicatedStorage} do
 					for _, v in v2:GetChildren() do
@@ -3234,7 +3391,7 @@ task.spawn(function()
             LogChange("main_mode", "mode: skull guitar")
 			GetSG()
 		elseif World.Sea3() and GetCastleRaid() and false then
-			SetStatus("Farm Castle Raid")
+			SetStatus("farm castle raid")
 			if LocalPlayer:DistanceFromCharacter(Vector3.new(-5000, 350, -3035)) > 700 then
 				CommF_:InvokeServer("requestEntrance", Vector3.new(-5000, 350, -3035))
 			end
@@ -3250,7 +3407,7 @@ task.spawn(function()
 				break
 			end
 		elseif World.Sea2() and workspace.Enemies:FindFirstChild("Factory") and false then
-			SetStatus("Farm Factory")
+			SetStatus("farm factory")
 			local coreEnemy = workspace.Enemies:FindFirstChild("Core")
 			if coreEnemy and coreEnemy.Humanoid.Health > 0 then
 				repeat
@@ -3262,25 +3419,25 @@ task.spawn(function()
 			end
 		elseif Config.CursedDualKatana and CheckYama() >= 30 and not CheckItem("Yama") then
             LogChange("main_mode", "mode: get yama")
-			SetStatus("Get Yama")
+			SetStatus("yama | unlocking")
 			GetYama()
 		elseif Config.CursedDualKatana and World.Sea3() and not CheckItem("Tushita") and CheckMonster("rip_indra") then
             LogChange("main_mode", "mode: get tushita")
-			SetStatus("Get Tushita")
+
 			GetTushita()
 		elseif LocalPlayer.Data.Level.Value >= 700 and World.Sea1() then
             LogChange("main_mode", "mode: unlock second sea")
-			SetStatus("Unlock Second Sea")
 			UnlockSecondSea()
 		elseif LocalPlayer.Data.Level.Value >= 1500 and World.Sea2() then
             LogChange("main_mode", "mode: unlock third sea")
-			SetStatus("Unlock Third Sea")
 			UnlockThirdSea()
 		elseif World.Sea2() and CheckMonster("Darkbeard") then
 			KillMonster("Darkbeard")
 		else
             LogChange("main_mode", "mode: farm level")
-			SetStatus("Farm Level" .. " | Level : " .. LocalPlayer.Data.Level.Value)
+            if not title.Text:find("^farm |") then
+                SetStatus("farm level | level " .. tostring(LocalPlayer.Data.Level.Value))
+            end
 			if World.Sea2() then
 				if HasItem("Hidden Key") and not CheckItem("Rengoku") then
 					EquipTool("Hidden Key")
